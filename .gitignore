@@ -1,3 +1,5 @@
 node_modules
-internlink.db*
+client/node_modules
+client/dist
+server/qsconnect.db*
 *.log

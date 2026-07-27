@@ -1,0 +1,30 @@
+:root {
+  --navy: #0c1c3c;
+  --navy-800: #14284f;
+  --navy-100: #e8ecf4;
+  --qs-yellow: #ffd700;
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --border: #e2e7ef;
+  --text: #17233b;
+  --text-muted: #63708a;
+  --green: #16a34a;
+  --green-strong: #15803d;
+  --amber: #d97706;
+  --red: #dc2626;
+  --accent: #0c1c3c;
+  --accent-soft: #e8ecf4;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(12, 28, 60, 0.08), 0 4px 16px rgba(12, 28, 60, 0.05);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+html[data-portal='student'] { --accent: #2563eb; --accent-soft: #e4edfd; }
+html[data-portal='employer'] { --accent: #0d9488; --accent-soft: #e0f2f0; }
+html[data-portal='university'] { --accent: #d97706; --accent-soft: #faeedd; }
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14.5px; line-height: 1.5; }
+h1, h2, h3, h4 { margin: 0 0 0.4em; line-height: 1.25; }
+a { color: var(--accent); text-decoration: none; }
+button { font-family: inherit; }
