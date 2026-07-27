@@ -1,74 +1,50 @@
-# InternLink UK — internship platform prototype
+# QS Connect
 
-A working prototype of a three-sided platform connecting **students**, **employers** and **universities** around internship opportunities:
+**The global network where university-verified talent meets the world's employers.**
 
-- **Students** sign in, browse and apply for internships, track applications, accept offers, and watch their work-experience hours progress toward their university's requirement.
-- **Employers** post opportunities, review applicants (with university/course/skills context), and move candidates through *shortlisted → offer → rejected*.
-- **Universities** oversee their cohort: approve accepted placements, mark them completed (which credits hours to the student), and see who has satisfied the work-experience requirement.
+A working prototype of a LinkedIn-style, three-sided early-careers platform built on QS's market position — students, employers and universities each get a first-class portal on one shared network graph. See `BUILD-BRIEF.md` for the full product brief and competitive positioning, and `API.md` for the API contract.
 
-Login is simulated for the prototype — pick any demo account on the landing page, no passwords. A **Reset demo data** button restores the seed data at any time.
+## What's in the prototype
 
-## Running on Replit (recommended)
+- **Three branded login portals** on a single account system (session auth, bcrypt passwords).
+- **Students:** LinkedIn-style profile with university verification, skills-based role matching with transparent match scores and skill gaps, one-click applications with status timelines, connections, feed, messaging, events, onboarding wizard.
+- **Employers:** company page, weighted-skills role posting, ranked *matched talent* view (beyond just applicants) with invite-to-apply, five-stage applicant pipeline (kanban), events with registrant lists.
+- **Universities:** QS data panel (rank, Employer Reputation, Employment Outcomes), education-claim verification queue, cohort dashboard, placement approvals, employer engagement analytics.
+- **Network layer:** connections (students), follows (orgs), cross-role feed with likes/comments, anti-spam messaging permissions, notifications.
 
-1. Go to [replit.com](https://replit.com) → **Create Repl** → **Import from zip / Upload files** (or create a blank **Node.js** repl and drag the zip contents into the file tree).
-2. Press **Run**. Replit reads `.replit`, runs `npm start`, installs dependencies automatically on first run, and opens the app in the webview. (If dependencies don't auto-install, run `npm install` once in the Shell tab.)
-3. The database (`internlink.db`) is created and seeded automatically on first boot.
+## Run on Replit
 
-### Running locally
+1. [replit.com](https://replit.com) → **Create Repl** → **Import from zip** (or drop the unzipped contents into a blank Node.js repl — files at the repl root).
+2. Press **Run**. The client is pre-built (`client/dist` ships in the zip); the server installs, creates and seeds `server/qsconnect.db` on first boot, and serves everything on one port. If the client build is missing, `npm start` rebuilds it automatically (~1 min).
+
+### Run locally
 
 ```bash
-npm install
-npm start        # http://localhost:3000
+npm install && npm start   # http://localhost:3000
 ```
+
+## Demo accounts (password: `demo123`)
+
+| Role | Examples |
+|---|---|
+| Students | `priya@student.demo`, `tom@student.demo`, `aisha@student.demo` (+9 more, see `server/db.js` header) |
+| Employers | `recruiter@novatech.demo`, `recruiter@meridian.demo`, `recruiter@ashfordcapital.demo` (+3 more) |
+| Universities | `careers@imperial.demo`, `careers@manchester.demo`, `careers@salford.demo`, `careers@monash.demo` |
+
+Reset to seed state anytime via the avatar menu → **Reset demo data**.
 
 ## Architecture
 
 ```
-.replit            Replit run configuration (npm start, port 3000 → 80)
-package.json       Node app — Express + better-sqlite3, no build step
-server.js          Express server: serves the frontend + JSON API under /api
-db.js              Opens SQLite, applies schema.sql, seeds demo data on first boot
-schema.sql         Database schema (see below)
-public/            Frontend single-page app (vanilla JS, no frameworks)
-internlink.db      SQLite database file (created at runtime, not committed)
+start.js            Builds client if dist missing, then starts the server
+server/index.js     Express: session auth, static client, SPA fallback
+server/routes/      Route modules per resource (auth, roles, applications, …)
+server/match.js     Deterministic skills-match scoring (unit-tested)
+server/db.js        SQLite bootstrap + idempotent demo seed
+server/schema.sql   Schema — 21 tables (see below)
+client/             React 18 + Vite SPA (portal pages per role + shared shell)
 ```
 
-The frontend authenticates by sending an `x-user-id` header (prototype-level auth); the server enforces role-based access on every endpoint.
+**Data model highlights:** `users` (one row per account, three roles) · `student_profiles` + `education_claims` (verification flow) · `skills`/`student_skills`/`role_skills` (shared taxonomy powering matching) · `applications` + `application_events` (seven-status pipeline with timeline; `placement_approved` = university sign-off) · `connections`/`follows`/`posts`/`threads`/`messages` (network graph) · `events`/`event_registrations` · `notifications`. SQLite for zero-setup demos; the schema ports directly to Postgres for production.
 
-## Database structure
-
-SQLite (file-based — zero setup on Replit; the same schema ports directly to Postgres when the prototype graduates, and Replit offers a built-in PostgreSQL add-on for that step).
-
-**Entity model:**
-
-```
-universities ──< users (role: student | employer | university)
-                   │ students also get a 1:1 student_profiles row
-employers ─────< users (employer accounts)
-employers ─────< internships ──< applications >── users (students)
-users ─────────< notifications
-```
-
-| Table | Purpose | Key fields |
-|---|---|---|
-| `universities` | Partner institutions | `required_hours` — the work-experience requirement each student must satisfy |
-| `employers` | Companies offering internships | sector, location, description |
-| `users` | One row per account, any role | `role` (`student`/`employer`/`university`), FK to university or employer |
-| `student_profiles` | 1:1 extension of student users | course, year, skills, `hours_completed`, `requirement_met` |
-| `internships` | Opportunities posted by employers | duration, `hours_total` (credited on completion), paid/stipend, deadline, open/closed |
-| `applications` | Student ↔ internship, doubles as the placement record | `status` state machine, unique per (internship, student) |
-| `notifications` | Cross-role activity feed | per-user, unread flag |
-
-**Application status state machine** (who can trigger each transition):
-
-```
-applied ──(employer)──> shortlisted ──(employer)──> offer ──(student)──> accepted
-accepted ──(university)──> approved ──(university)──> completed
-any pre-accept state ──(employer)──> rejected      any pre-accept state ──(student)──> withdrawn
-```
-
-On **completed**, the internship's `hours_total` is added to the student's `hours_completed`; if that meets the university's `required_hours`, `requirement_met` is set automatically (universities can also toggle it manually).
-
-## API
-
-All endpoints are JSON under `/api` — accounts, internships (search/filter/CRUD), applications (create + status transitions with role checks), university cohort views, notifications, and `POST /api/reset` to re-seed. See `server.js` for the full list.
+**Matching:** transparent weighted skills overlap (high=3/medium=2) plus sector, location and work-rights signals, shown identically to both sides with overlap and gap lists — see `server/match.js` and BUILD-BRIEF §4.

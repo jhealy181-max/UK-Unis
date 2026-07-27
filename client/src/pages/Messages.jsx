@@ -38,7 +38,7 @@ export default function Messages() {
     if (!threadId) return;
     try {
       const data = await api.get(`/threads/${threadId}/messages`);
-      setMessages(data.filter ? data : data);
+      setMessages(Array.isArray(data) ? data : data.messages || []);
       if (data.other) setOther(data.other);
       if (!silent) loadThreads();
       refresh();
