@@ -213,7 +213,17 @@ function meShape(userId) {
   };
 }
 
+// SQLite can only bind strings/numbers/null: arrays become comma-separated
+// text (matching the schema's TEXT columns) and booleans become 0/1.
+function toBindable(value) {
+  if (Array.isArray(value)) return value.join(', ');
+  if (typeof value === 'boolean') return value ? 1 : 0;
+  if (value === undefined) return null;
+  return value;
+}
+
 module.exports = {
+  toBindable,
   db,
   requireAuth,
   requireRole,

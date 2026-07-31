@@ -31,11 +31,23 @@ export default function EditProfile() {
   const [universities, setUniversities] = useState([]);
   const [claims, setClaims] = useState(profile.education_claims || []);
   const [newClaim, setNewClaim] = useState({ university_id: '', course: '', start_year: '', end_year: '' });
+  const [courseOptions, setCourseOptions] = useState([]);
+  const [locationOptions, setLocationOptions] = useState([]);
+
+  const locationList = locations.split(',').map((s) => s.trim()).filter(Boolean);
+  const toggleLocation = (name) => {
+    const next = locationList.includes(name)
+      ? locationList.filter((l) => l !== name)
+      : [...locationList, name];
+    setLocations(next.join(', '));
+  };
   const [addingClaim, setAddingClaim] = useState(false);
 
   useEffect(() => {
     api.get('/skills').then(setAllSkills).catch((e) => toast(e.message, 'error'));
     api.get('/universities').then(setUniversities).catch((e) => toast(e.message, 'error'));
+    api.get('/courses').then(setCourseOptions).catch(() => {});
+    api.get('/locations').then(setLocationOptions).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -235,8 +247,18 @@ export default function EditProfile() {
             <input className="input" value={interests} onChange={(e) => setInterests(e.target.value)} />
           </label>
           <label className="field">
-            <span className="label">Preferred locations (comma-separated)</span>
-            <input className="input" value={locations} onChange={(e) => setLocations(e.target.value)} />
+            <span className="label">Preferred locations</span>
+            <select className="select" value="" onChange={(e) => { if (e.target.value) toggleLocation(e.target.value); }}>
+              <option value="">Add a location…</option>
+              {locationOptions.filter((l) => !locationList.includes(l)).map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+            {locationList.length > 0 && (
+              <div className="row" style={{ flexWrap: 'wrap', marginTop: 8 }}>
+                {locationList.map((l) => (
+                  <button key={l} type="button" className="btn btn-ghost btn-sm" onClick={() => toggleLocation(l)}>{l} ✕</button>
+                ))}
+              </div>
+            )}
           </label>
           <label className="row small" style={{ gap: 6 }}>
             <input type="checkbox" checked={workRights} onChange={(e) => setWorkRights(e.target.checked)} /> I have the right to work in my target market
@@ -268,7 +290,10 @@ export default function EditProfile() {
               <option value="">Select university</option>
               {universities.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
-            <input className="input" placeholder="Course" value={newClaim.course} onChange={(e) => setNewClaim({ ...newClaim, course: e.target.value })} />
+            <select className="select" value={newClaim.course} onChange={(e) => setNewClaim({ ...newClaim, course: e.target.value })}>
+              <option value="">Select course…</option>
+              {courseOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
             <input className="input" style={{ width: 100 }} placeholder="Start year" value={newClaim.start_year} onChange={(e) => setNewClaim({ ...newClaim, start_year: e.target.value })} />
             <input className="input" style={{ width: 100 }} placeholder="End year" value={newClaim.end_year} onChange={(e) => setNewClaim({ ...newClaim, end_year: e.target.value })} />
             <button className="btn btn-primary btn-sm" disabled={addingClaim} onClick={addClaim}>Add claim</button>

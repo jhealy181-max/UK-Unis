@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, requireAuth, requireRole, notify, canMessage } = require('../lib/helpers');
+const { db, requireAuth, requireRole, notify, canMessage, toBindable } = require('../lib/helpers');
 
 const router = express.Router();
 
@@ -53,7 +53,7 @@ router.patch('/me/profile', requireAuth, requireRole('student'), (req, res) => {
   const fields = ['headline', 'about', 'interests_sectors', 'preferred_locations', 'work_rights', 'open_to_relocate', 'open_to_opportunities'];
   const updates = {};
   for (const f of fields) {
-    if (req.body && Object.prototype.hasOwnProperty.call(req.body, f)) updates[f] = req.body[f];
+    if (req.body && Object.prototype.hasOwnProperty.call(req.body, f)) updates[f] = toBindable(req.body[f]);
   }
   const keys = Object.keys(updates);
   if (keys.length) {

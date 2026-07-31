@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, requireAuth, requireRole, matchForStudent, requiredSkillsForRole, notify } = require('../lib/helpers');
+const { db, requireAuth, requireRole, matchForStudent, requiredSkillsForRole, notify, toBindable } = require('../lib/helpers');
 
 const router = express.Router();
 
@@ -103,7 +103,7 @@ router.patch('/roles/:id', requireAuth, requireRole('employer'), (req, res) => {
   const fields = ['title', 'type', 'sector', 'location', 'remote', 'paid', 'description', 'sponsors_visa', 'deadline', 'status'];
   const updates = {};
   for (const f of fields) {
-    if (req.body && Object.prototype.hasOwnProperty.call(req.body, f)) updates[f] = req.body[f];
+    if (req.body && Object.prototype.hasOwnProperty.call(req.body, f)) updates[f] = toBindable(req.body[f]);
   }
   if (updates.status && !['open', 'closed'].includes(updates.status)) {
     return res.status(400).json({ error: 'invalid status' });

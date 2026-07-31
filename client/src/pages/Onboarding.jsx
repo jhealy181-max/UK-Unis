@@ -24,14 +24,27 @@ export default function Onboarding() {
   const [selectedSkills, setSelectedSkills] = useState(new Set());
 
   const [sectors, setSectors] = useState(new Set());
-  const [locations, setLocations] = useState('');
+  const [locations, setLocations] = useState(new Set());
   const [workRights, setWorkRights] = useState(true);
   const [openToRelocate, setOpenToRelocate] = useState(false);
 
+  const [courseOptions, setCourseOptions] = useState([]);
+  const [locationOptions, setLocationOptions] = useState([]);
+
   useEffect(() => {
     api.get('/skills').then(setAllSkills).catch((e) => toast(e.message, 'error'));
+    api.get('/courses').then(setCourseOptions).catch(() => {});
+    api.get('/locations').then(setLocationOptions).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const toggleLocation = (name) => {
+    setLocations((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  };
 
   const grouped = useMemo(() => {
     const g = {};
@@ -98,7 +111,7 @@ export default function Onboarding() {
     try {
       await api.patch('/me/profile', {
         interests_sectors: Array.from(sectors),
-        preferred_locations: locations.split(',').map((s) => s.trim()).filter(Boolean),
+        preferred_locations: Array.from(locations),
         work_rights: workRights,
         open_to_relocate: openToRelocate,
       });
@@ -137,7 +150,10 @@ export default function Onboarding() {
             </div>
             <div className="field">
               <label className="label" htmlFor="course">Course</label>
-              <input id="course" className="input" value={course} onChange={(e) => setCourse(e.target.value)} placeholder="BSc Computer Science" />
+              <select id="course" className="select" value={course} onChange={(e) => setCourse(e.target.value)}>
+                <option value="">Select your course…</option>
+                {courseOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
             <div className="row">
               <div className="field">
@@ -197,8 +213,25 @@ export default function Onboarding() {
               </div>
             </div>
             <div className="field">
-              <label className="label" htmlFor="locations">Preferred locations (comma-separated)</label>
-              <input id="locations" className="input" value={locations} onChange={(e) => setLocations(e.target.value)} placeholder="London, Manchester, Remote" />
+              <label className="label" htmlFor="locations">Preferred locations</label>
+              <select
+                id="locations"
+                className="select"
+                value=""
+                onChange={(e) => { if (e.target.value) toggleLocation(e.target.value); }}
+              >
+                <option value="">Add a location…</option>
+                {locationOptions.filter((l) => !locations.has(l)).map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+              {locations.size > 0 && (
+                <div className="row" style={{ flexWrap: 'wrap', marginTop: 8 }}>
+                  {[...locations].map((l) => (
+                    <button key={l} type="button" className="btn btn-ghost btn-sm" onClick={() => toggleLocation(l)}>
+                      {l} ✕
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <label className="row small">
               <input type="checkbox" checked={workRights} onChange={(e) => setWorkRights(e.target.checked)} /> I have the right to work in my target locations
