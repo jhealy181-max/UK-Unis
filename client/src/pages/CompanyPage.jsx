@@ -54,7 +54,7 @@ export default function CompanyPage() {
             <Avatar name={org.name} size={72} color={org.banner_color} />
             <div>
               <h1 style={{ marginBottom: 4 }}>{org.name}</h1>
-              <div className="small muted">{(org.sectors || []).join(', ')}</div>
+              <div className="small muted">{Array.isArray(org.sectors) ? org.sectors.join(", ") : (org.sectors || "")}</div>
               <div className="small muted">{org.followers} followers</div>
               <Badge kind="neutral">QS Employer Reputation participant</Badge>
             </div>
@@ -71,7 +71,7 @@ export default function CompanyPage() {
         <div className="stack">
           <Card title="About">
             <p className="small">{org.about || 'No description yet.'}</p>
-            <div className="small muted">{(org.locations || []).join(', ')}</div>
+            <div className="small muted">{Array.isArray(org.locations) ? org.locations.join(", ") : (org.locations || "")}</div>
           </Card>
 
           {isOwner && <PostComposer onPosted={(p) => setOrg((prev) => ({ ...prev, posts: [p, ...(prev.posts || [])] }))} />}
