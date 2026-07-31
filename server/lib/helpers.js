@@ -16,6 +16,9 @@ function requireAuth(req, res, next) {
   if (!user) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
+  if (!user.active) {
+    return res.status(403).json({ error: 'Account suspended by QS administrator' });
+  }
   req.user = user;
   next();
 }
@@ -193,10 +196,17 @@ function meShape(userId) {
       unread_notifications: unreadNotificationCount(user.id),
       unread_messages: unreadMessageCount(user.id),
     };
-  } else {
+  } else if (user.role === 'university_admin') {
     const u = db.prepare('SELECT * FROM universities WHERE id = ?').get(user.university_id) || {};
     profile = {
       ...u,
+      university_status: u.status || null,
+      unread_notifications: unreadNotificationCount(user.id),
+      unread_messages: unreadMessageCount(user.id),
+    };
+  } else {
+    // qs_admin: no org, just notification/message counts.
+    profile = {
       unread_notifications: unreadNotificationCount(user.id),
       unread_messages: unreadMessageCount(user.id),
     };

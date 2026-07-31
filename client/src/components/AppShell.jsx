@@ -90,11 +90,35 @@ const Icon = {
       <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  skillsGap: (p) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M4 19h16M7 19v-6M12 19V7M17 19v-10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  users: (p) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" />
+      <path d="M3 20c0-3 2.5-5 6-5s6 2 6 5M15 20c0-2 1.5-4 4-4" strokeLinecap="round" />
+    </svg>
+  ),
+  content: (p) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M8 9h8M8 13h5" strokeLinecap="round" />
+    </svg>
+  ),
+  building: (p) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M4 21V6l8-3 8 3v15" strokeLinejoin="round" />
+      <path d="M4 21h16M9 9h1M14 9h1M9 13h1M14 13h1M9 21v-5h6v5" strokeLinecap="round" />
+    </svg>
+  ),
 };
 
 function roleHome(role) {
   if (role === 'student') return '/student';
   if (role === 'employer') return '/employer';
+  if (role === 'qs_admin') return '/admin';
   return '/university';
 }
 
@@ -119,8 +143,16 @@ function navItemsFor(user) {
       { to: '/employer/roles', label: 'Roles', icon: Icon.roles },
       { to: '/messages', label: 'Messages', icon: Icon.messages },
       { to: '/events', label: 'Events', icon: Icon.events },
-      user.company ? { to: `/company-page/${user.company.id}`, label: 'Company page', icon: Icon.profile } : null,
-    ].filter(Boolean);
+      { to: '/employer/profile', label: 'Company profile', icon: Icon.profile },
+    ];
+  }
+  if (role === 'qs_admin') {
+    return [
+      { to: '/admin', label: 'Dashboard', icon: Icon.home, end: true },
+      { to: '/admin/users', label: 'Users', icon: Icon.users },
+      { to: '/admin/content', label: 'Content', icon: Icon.content },
+      { to: '/admin/universities', label: 'Universities', icon: Icon.building },
+    ];
   }
   // university_admin
   return [
@@ -130,6 +162,7 @@ function navItemsFor(user) {
     { to: '/university/cohort', label: 'Cohort', icon: Icon.cohort },
     { to: '/university/placements', label: 'Placements', icon: Icon.placements },
     { to: '/university/engagement', label: 'Engagement', icon: Icon.engagement },
+    { to: '/university/skills-gap', label: 'Skills gap', icon: Icon.skillsGap },
     { to: '/university/events', label: 'Events', icon: Icon.events },
     { to: '/messages', label: 'Messages', icon: Icon.messages },
     user.university ? { to: `/university-page/${user.university.id}`, label: 'University page', icon: Icon.profile } : null,
@@ -240,6 +273,7 @@ function AvatarMenu({ user, logout }) {
   const myProfileLink = () => {
     if (user.role === 'student') return '/student/profile';
     if (user.role === 'employer') return user.company ? `/company-page/${user.company.id}` : '/employer';
+    if (user.role === 'qs_admin') return '/admin';
     return user.university ? `/university-page/${user.university.id}` : '/university';
   };
 
@@ -316,7 +350,14 @@ export default function AppShell({ children }) {
             <NavLink key={item.to} {...item} />
           ))}
         </nav>
-        <main className="shell-main">{children}</main>
+        <main className="shell-main">
+          {user.role === 'university_admin' && user.university_status === 'pending' && (
+            <div className="pending-banner">
+              Pending QS approval — your institution is awaiting activation by the QS team.
+            </div>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );

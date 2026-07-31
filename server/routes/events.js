@@ -5,7 +5,10 @@ const { eventShape } = require('../lib/shapes');
 const router = express.Router();
 
 router.get('/events', requireAuth, (req, res) => {
-  const rows = db.prepare("SELECT * FROM events WHERE date >= datetime('now') ORDER BY date ASC").all();
+  let sql = "SELECT * FROM events WHERE date >= datetime('now')";
+  if (req.user.role !== 'qs_admin') sql += ' AND hidden = 0';
+  sql += ' ORDER BY date ASC';
+  const rows = db.prepare(sql).all();
   res.json(rows.map(e => eventShape(e, req.user.id)));
 });
 

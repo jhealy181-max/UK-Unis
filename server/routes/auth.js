@@ -5,10 +5,10 @@ const { db, meShape, requireAuth } = require('../lib/helpers');
 const router = express.Router();
 
 router.post('/auth/register', (req, res) => {
-  const { role, email, password, name, university_id, company_id, new_company } = req.body || {};
+  const { role, email, password, name, university_id, company_id, new_company, new_university } = req.body || {};
 
-  if (!role || !['student', 'employer'].includes(role)) {
-    return res.status(400).json({ error: 'role must be student or employer' });
+  if (!role || !['student', 'employer', 'university'].includes(role)) {
+    return res.status(400).json({ error: 'role must be student, employer or university' });
   }
   if (!email || !password || !name) {
     return res.status(400).json({ error: 'email, password and name are required' });
@@ -17,6 +17,25 @@ router.post('/auth/register', (req, res) => {
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (existing) {
     return res.status(409).json({ error: 'Email already registered' });
+  }
+
+  // University self-registration: creates a new university (status 'pending')
+  // plus its university_admin account, and logs them straight in.
+  if (role === 'university') {
+    if (!new_university || !new_university.name || !new_university.city || !new_university.country) {
+      return res.status(400).json({ error: 'new_university requires name, city, country' });
+    }
+    const passwordHash = bcrypt.hashSync(password, 10);
+    const uniR = db.prepare(`
+      INSERT INTO universities (name, city, country, status) VALUES (?,?,?,'pending')
+    `).run(new_university.name, new_university.city, new_university.country);
+    const userR = db.prepare(`
+      INSERT INTO users (role, email, password_hash, name, university_id)
+      VALUES ('university_admin', ?,?,?,?)
+    `).run(email, passwordHash, name, uniR.lastInsertRowid);
+
+    req.session.userId = userR.lastInsertRowid;
+    return res.json(meShape(userR.lastInsertRowid));
   }
 
   let finalUniversityId = null;
@@ -72,6 +91,9 @@ router.post('/auth/login', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  if (!user.active) {
+    return res.status(403).json({ error: 'Account suspended by QS administrator' });
   }
   req.session.userId = user.id;
   res.json(meShape(user.id));

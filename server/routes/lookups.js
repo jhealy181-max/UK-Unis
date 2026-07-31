@@ -4,7 +4,9 @@ const { db } = require('../lib/helpers');
 const router = express.Router();
 
 router.get('/universities', (req, res) => {
-  const rows = db.prepare('SELECT id, name, city, country, qs_rank FROM universities ORDER BY qs_rank ASC').all();
+  const rows = db.prepare(
+    "SELECT id, name, city, country, qs_rank FROM universities WHERE status = 'approved' ORDER BY qs_rank ASC"
+  ).all();
   res.json(rows);
 });
 

@@ -26,7 +26,9 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (user && user.role) {
-      document.documentElement.dataset.portal = user.role === 'university_admin' ? 'university' : user.role;
+      if (user.role === 'university_admin') document.documentElement.dataset.portal = 'university';
+      else if (user.role === 'qs_admin') document.documentElement.dataset.portal = 'admin';
+      else document.documentElement.dataset.portal = user.role;
     } else {
       delete document.documentElement.dataset.portal;
     }

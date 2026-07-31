@@ -71,6 +71,15 @@ export default function Landing() {
         ))}
       </section>
 
+      <section className="landing-admin-link" style={{ textAlign: 'center', marginTop: -36, marginBottom: 40 }}>
+        <div className="small">
+          <Link to="/register/university">Register your university →</Link>
+        </div>
+        <div className="small muted" style={{ marginTop: 6 }}>
+          <Link to="/login/admin" className="muted">QS platform admin →</Link>
+        </div>
+      </section>
+
       <section className="landing-diff">
         {DIFFERENTIATORS.map((d) => (
           <div key={d.title} className="landing-diff-item">

@@ -63,7 +63,10 @@ export default function Roles() {
           <tbody>
             {roles.map((r) => (
               <tr key={r.id}>
-                <td><Link to={`/employer/roles/${r.id}`}>{r.title}</Link></td>
+                <td>
+                  <Link to={`/employer/roles/${r.id}`}>{r.title}</Link>
+                  {r.hidden ? <span style={{ marginLeft: 8 }}><Badge kind="neutral">Hidden by QS</Badge></span> : null}
+                </td>
                 <td>{r.type}</td>
                 <td>
                   <div className="row small" style={{ flexWrap: 'wrap', gap: 6 }}>

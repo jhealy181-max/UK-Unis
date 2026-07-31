@@ -219,6 +219,11 @@
 
 .app-loading { display: flex; align-items: center; justify-content: center; min-height: 60vh; color: var(--text-muted); }
 
+.pending-banner {
+  background: #fef3c7; color: #92400e; font-size: 13px; font-weight: 600;
+  padding: 10px 24px; border-bottom: 1px solid #fde68a;
+}
+
 /* ============ landing ============ */
 .landing { max-width: 1180px; margin: 0 auto; padding: 20px 24px 64px; }
 .landing-nav { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 40px; }

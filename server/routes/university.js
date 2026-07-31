@@ -141,6 +141,44 @@ router.get('/university/placements', (req, res) => {
   res.json({ pending, approved });
 });
 
+router.get('/university/skills-gap', (req, res) => {
+  const uniId = req.user.university_id;
+  const cohortSize = db.prepare(
+    "SELECT COUNT(*) n FROM users WHERE role = 'student' AND university_id = ?"
+  ).get(uniId).n;
+
+  const demandRows = db.prepare(`
+    SELECT s.id AS id, s.name AS skill, s.category AS category,
+           SUM(CASE WHEN rs.weight = 'high' THEN 3 ELSE 2 END) AS demand
+    FROM role_skills rs
+    JOIN roles r ON r.id = rs.role_id
+    JOIN skills s ON s.id = rs.skill_id
+    WHERE r.status = 'open' AND r.hidden = 0
+    GROUP BY s.id
+    ORDER BY demand DESC
+    LIMIT 15
+  `).all();
+
+  const result = demandRows.map(d => {
+    const studentsWith = db.prepare(`
+      SELECT COUNT(*) n FROM student_skills ss
+      JOIN users u ON u.id = ss.student_user_id
+      WHERE u.university_id = ? AND ss.skill_id = ?
+    `).get(uniId, d.id).n;
+    const coveragePct = cohortSize ? Math.round((studentsWith / cohortSize) * 100) : 0;
+    return {
+      skill: d.skill,
+      category: d.category,
+      demand: d.demand,
+      students_with: studentsWith,
+      cohort_size: cohortSize,
+      coverage_pct: coveragePct,
+    };
+  });
+
+  res.json(result);
+});
+
 router.get('/university/engagement', (req, res) => {
   const rows = db.prepare(`
     SELECT c.id AS company_id, c.name,

@@ -17,6 +17,7 @@ function roleCard(role, viewerUser) {
     sponsors_visa: role.sponsors_visa,
     deadline: role.deadline,
     status: role.status,
+    hidden: !!role.hidden,
     created_at: role.created_at,
     company,
   };
@@ -32,7 +33,7 @@ function roleCard(role, viewerUser) {
 router.get('/roles', requireAuth, (req, res) => {
   const { search, type, sector, location, remote, sponsors_visa } = req.query;
 
-  let sql = "SELECT * FROM roles WHERE status = 'open'";
+  let sql = "SELECT * FROM roles WHERE status = 'open' AND hidden = 0";
   const params = [];
   if (search) {
     sql += ' AND (title LIKE ? OR description LIKE ?)';
@@ -51,7 +52,7 @@ router.get('/roles', requireAuth, (req, res) => {
     cards.sort((a, b) => b.match.score - a.match.score);
   }
 
-  const allOpen = db.prepare("SELECT DISTINCT sector, location FROM roles WHERE status = 'open'").all();
+  const allOpen = db.prepare("SELECT DISTINCT sector, location FROM roles WHERE status = 'open' AND hidden = 0").all();
   const sectors = [...new Set(allOpen.map(r => r.sector))].sort();
   const locations = [...new Set(allOpen.map(r => r.location))].sort();
 
@@ -61,6 +62,9 @@ router.get('/roles', requireAuth, (req, res) => {
 router.get('/roles/:id', requireAuth, (req, res) => {
   const role = db.prepare('SELECT * FROM roles WHERE id = ?').get(req.params.id);
   if (!role) return res.status(404).json({ error: 'Not found' });
+  const isOwner = req.user.role === 'employer' && req.user.company_id === role.company_id;
+  const isAdmin = req.user.role === 'qs_admin';
+  if (role.hidden && !isOwner && !isAdmin) return res.status(404).json({ error: 'Not found' });
   const card = roleCard(role, req.user);
   const applicantCount = db.prepare('SELECT COUNT(*) n FROM applications WHERE role_id = ?').get(role.id).n;
   res.json({

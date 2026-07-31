@@ -16,6 +16,7 @@ router.post('/applications', requireAuth, requireRole('student'), (req, res) => 
   const role = db.prepare('SELECT * FROM roles WHERE id = ?').get(role_id);
   if (!role) return res.status(400).json({ error: 'Unknown role_id' });
   if (role.status !== 'open') return res.status(409).json({ error: 'Role is closed' });
+  if (role.hidden) return res.status(409).json({ error: 'Role is closed' });
 
   const existing = db.prepare('SELECT 1 FROM applications WHERE role_id = ? AND student_user_id = ?').get(role.id, req.user.id);
   if (existing) return res.status(409).json({ error: 'Already applied' });

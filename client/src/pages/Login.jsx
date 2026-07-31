@@ -26,6 +26,13 @@ const PORTAL_META = {
     sub: 'Verify your cohort, track placements, and see which employers are engaging your students.',
     demo: 'careers@imperial.demo',
   },
+  admin: {
+    label: 'QS Platform Administration',
+    color: '#b8860b',
+    headline: 'QS Platform Administration.',
+    sub: 'Oversee users, moderate content, manage universities, and monitor platform-wide analytics.',
+    demo: 'admin@qs.demo',
+  },
 };
 
 export default function Login() {
@@ -50,7 +57,9 @@ export default function Login() {
     try {
       const me = await api.post('/auth/login', { email, password });
       await refresh();
-      const role = me.role === 'university_admin' ? 'university' : me.role;
+      let role = me.role;
+      if (role === 'university_admin') role = 'university';
+      else if (role === 'qs_admin') role = 'admin';
       navigate(`/${role}`);
     } catch (err) {
       toast(err.message, 'error');
@@ -84,14 +93,18 @@ export default function Login() {
 
         <div className="auth-panel-footer">
           {portal === 'university' ? (
-            <p className="small muted">Seed accounts only — contact QS to onboard your institution.</p>
+            <p className="small muted">
+              Seed accounts only — <Link to="/register/university">register your institution</Link> to onboard.
+            </p>
+          ) : portal === 'admin' ? (
+            <p className="small muted">QS staff only — access is provisioned by the platform team.</p>
           ) : (
             <p className="small muted">
               New here? <Link to={`/register/${portal}`}>Create an account</Link>
             </p>
           )}
           <p className="small muted">
-            Not {meta.label.toLowerCase()}? <Link to="/">Choose a different portal</Link>
+            Not {portal === 'admin' ? 'QS staff' : meta.label.toLowerCase()}? <Link to="/">Choose a different portal</Link>
           </p>
         </div>
       </div>

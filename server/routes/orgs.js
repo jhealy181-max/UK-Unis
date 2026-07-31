@@ -13,7 +13,7 @@ router.get('/universities/:id', requireAuth, (req, res) => {
     "SELECT 1 FROM follows WHERE org_type = 'university' AND org_id = ? AND user_id = ?"
   ).get(uni.id, req.user.id);
   const posts = db.prepare(
-    "SELECT * FROM posts WHERE org_type = 'university' AND org_id = ? ORDER BY created_at DESC"
+    "SELECT * FROM posts WHERE org_type = 'university' AND org_id = ? AND hidden = 0 ORDER BY created_at DESC"
   ).all(uni.id).map(p => postShape(p, req.user.id));
   const events = db.prepare(
     "SELECT * FROM events WHERE org_type = 'university' AND org_id = ? ORDER BY date ASC"
@@ -34,10 +34,10 @@ router.get('/companies/:id', requireAuth, (req, res) => {
     "SELECT 1 FROM follows WHERE org_type = 'company' AND org_id = ? AND user_id = ?"
   ).get(company.id, req.user.id);
   const openRoles = db.prepare(
-    "SELECT id, title, type, location FROM roles WHERE company_id = ? AND status = 'open' ORDER BY created_at DESC"
+    "SELECT id, title, type, location FROM roles WHERE company_id = ? AND status = 'open' AND hidden = 0 ORDER BY created_at DESC"
   ).all(company.id);
   const posts = db.prepare(
-    "SELECT * FROM posts WHERE org_type = 'company' AND org_id = ? ORDER BY created_at DESC"
+    "SELECT * FROM posts WHERE org_type = 'company' AND org_id = ? AND hidden = 0 ORDER BY created_at DESC"
   ).all(company.id).map(p => postShape(p, req.user.id));
   const events = db.prepare(
     "SELECT * FROM events WHERE org_type = 'company' AND org_id = ? ORDER BY date ASC"

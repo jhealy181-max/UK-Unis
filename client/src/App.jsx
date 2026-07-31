@@ -34,15 +34,26 @@ import Cohort from './pages/university/Cohort.jsx';
 import Placements from './pages/university/Placements.jsx';
 import Engagement from './pages/university/Engagement.jsx';
 import UniversityEvents from './pages/university/UniversityEvents.jsx';
+import SkillsGap from './pages/university/SkillsGap.jsx';
+
+import CompanyProfile from './pages/employer/CompanyProfile.jsx';
+
+import AdminDashboard from './pages/admin/Dashboard.jsx';
+import AdminUsers from './pages/admin/Users.jsx';
+import AdminContent from './pages/admin/Content.jsx';
+import AdminUniversities from './pages/admin/Universities.jsx';
 
 function normalizedRole(role) {
-  return role === 'university_admin' ? 'university' : role;
+  if (role === 'university_admin') return 'university';
+  if (role === 'qs_admin') return 'admin';
+  return role;
 }
 
 function roleHome(role) {
   const r = normalizedRole(role);
   if (r === 'student') return '/student';
   if (r === 'employer') return '/employer';
+  if (r === 'admin') return '/admin';
   return '/university';
 }
 
@@ -113,6 +124,7 @@ export default function App() {
             <Route path="/employer/roles/new" element={<RequireRole role="employer"><RoleForm /></RequireRole>} />
             <Route path="/employer/roles/:id" element={<RequireRole role="employer"><RoleManage /></RequireRole>} />
             <Route path="/employer/events" element={<RequireRole role="employer"><EmployerEvents /></RequireRole>} />
+            <Route path="/employer/profile" element={<RequireRole role="employer"><CompanyProfile /></RequireRole>} />
 
             {/* university portal */}
             <Route path="/university" element={<RequireRole role="university"><UniversityDashboard /></RequireRole>} />
@@ -121,6 +133,13 @@ export default function App() {
             <Route path="/university/placements" element={<RequireRole role="university"><Placements /></RequireRole>} />
             <Route path="/university/engagement" element={<RequireRole role="university"><Engagement /></RequireRole>} />
             <Route path="/university/events" element={<RequireRole role="university"><UniversityEvents /></RequireRole>} />
+            <Route path="/university/skills-gap" element={<RequireRole role="university"><SkillsGap /></RequireRole>} />
+
+            {/* admin portal */}
+            <Route path="/admin" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />
+            <Route path="/admin/users" element={<RequireRole role="admin"><AdminUsers /></RequireRole>} />
+            <Route path="/admin/content" element={<RequireRole role="admin"><AdminContent /></RequireRole>} />
+            <Route path="/admin/universities" element={<RequireRole role="admin"><AdminUniversities /></RequireRole>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

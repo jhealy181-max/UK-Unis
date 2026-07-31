@@ -8,16 +8,19 @@ router.get('/feed', requireAuth, (req, res) => {
   const rows = db.prepare(`
     SELECT DISTINCT p.* FROM posts p
     WHERE
-      (p.org_type IS NOT NULL AND EXISTS (
-        SELECT 1 FROM follows f WHERE f.user_id = ? AND f.org_type = p.org_type AND f.org_id = p.org_id
-      ))
-      OR (p.org_type IS NULL AND EXISTS (
-        SELECT 1 FROM connections c WHERE c.status = 'accepted'
-          AND ((c.requester_id = ? AND c.addressee_id = p.author_user_id)
-            OR (c.addressee_id = ? AND c.requester_id = p.author_user_id))
-      ))
-      OR (p.org_type = 'university' AND ? IS NOT NULL AND p.org_id = ?)
-      OR (p.author_user_id = ?)
+      p.hidden = 0
+      AND (
+        (p.org_type IS NOT NULL AND EXISTS (
+          SELECT 1 FROM follows f WHERE f.user_id = ? AND f.org_type = p.org_type AND f.org_id = p.org_id
+        ))
+        OR (p.org_type IS NULL AND EXISTS (
+          SELECT 1 FROM connections c WHERE c.status = 'accepted'
+            AND ((c.requester_id = ? AND c.addressee_id = p.author_user_id)
+              OR (c.addressee_id = ? AND c.requester_id = p.author_user_id))
+        ))
+        OR (p.org_type = 'university' AND ? IS NOT NULL AND p.org_id = ?)
+        OR (p.author_user_id = ?)
+      )
     ORDER BY p.created_at DESC
     LIMIT 50
   `).all(req.user.id, req.user.id, req.user.id, req.user.university_id, req.user.university_id, req.user.id);

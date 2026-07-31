@@ -2,10 +2,20 @@
 //
 // DEMO CREDENTIALS (all passwords: "demo123")
 // -------------------------------------------------------------------------
+// QS platform admin (role: qs_admin)
+//   admin@qs.demo             QS Platform Admin
+//
 // Universities (role: university_admin)
-//   careers@imperial.demo     Dr. Helen Chen       Imperial College London
-//   careers@manchester.demo   Prof. Alan Whitmore  University of Manchester
-//   careers@salford.demo      Dr. Rachel Osborne   University of Salford
+//   careers@imperial.demo     Dr. Helen Chen        Imperial College London
+//   careers@ucl.demo          Dr. Sarah Wong        UCL
+//   careers@edinburgh.demo    Prof. Ian Mackenzie   University of Edinburgh
+//   careers@kcl.demo          Dr. Olivia Bennett    King's College London
+//   careers@manchester.demo   Prof. Alan Whitmore   University of Manchester
+//   careers@birmingham.demo   Dr. Marcus Fielding   University of Birmingham
+//   careers@leeds.demo        Dr. Naomi Clarke      University of Leeds
+//   careers@nottingham.demo   Dr. Thomas Reid       University of Nottingham
+//   careers@portsmouth.demo   Dr. Ellen Shaw        University of Portsmouth
+//   careers@salford.demo      Dr. Rachel Osborne    University of Salford
 //   careers@monash.demo       Dr. Michael Tran      Monash University
 //
 // Employers (role: employer)
@@ -16,17 +26,17 @@
 //   recruiter@vitalishealth.demo        Ryan Doyle        Vitalis Health (Health)
 //   recruiter@kaleidoscopemedia.demo    Zara Ahmed        Kaleidoscope Media (Media)
 //
-// Students (role: student)
+// Students (role: student) — spread across 6 universities
 //   priya@student.demo    Priya Sharma     Salford      international, verified
 //   tom@student.demo      Tom Whitfield    Imperial     verified
 //   aisha@student.demo    Aisha Khan       Manchester   verified
 //   wei@student.demo      Wei Chen         Monash       international, verified
-//   emma@student.demo     Emma Clarke      Imperial     verified
+//   emma@student.demo     Emma Clarke      UCL          verified
 //   liam@student.demo     Liam O'Brien     Manchester   verified
 //   sofia@student.demo    Sofia Rossi      Salford      international, verified
 //   james@student.demo    James Okafor     Monash       verified
 //   grace@student.demo    Grace Kim        Imperial     pending verification
-//   noah@student.demo     Noah Patel       Manchester   pending verification
+//   noah@student.demo     Noah Patel       Edinburgh    pending verification
 //   fatima@student.demo   Fatima Al-Sayed  Salford      pending verification
 //   ben@student.demo      Ben Turner       Monash       pending verification
 // -------------------------------------------------------------------------
@@ -38,6 +48,37 @@ const bcrypt = require('bcryptjs');
 
 const DB_PATH = path.join(__dirname, 'qsconnect.db');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
+const SCHEMA_VERSION = '2';
+
+// -- schema-version migration: prototype-acceptable "delete and reseed" ------
+// If a db file exists from a previous iteration (no app_meta table, or an
+// older schema_version), close/delete it so applySchema() below can create
+// the current schema fresh and seed() can repopulate it.
+function migrateIfNeeded() {
+  if (!fs.existsSync(DB_PATH)) return;
+  let version = null;
+  try {
+    const tmp = new Database(DB_PATH, { fileMustExist: true });
+    try {
+      const row = tmp.prepare("SELECT value FROM app_meta WHERE key = 'schema_version'").get();
+      version = row ? row.value : null;
+    } catch (e) {
+      version = null; // app_meta table doesn't exist yet — pre-v2 db
+    }
+    tmp.close();
+  } catch (e) {
+    version = null;
+  }
+  if (version !== SCHEMA_VERSION) {
+    console.log(`[db] schema version "${version || 'none'}" != "${SCHEMA_VERSION}" — deleting and reseeding qsconnect.db`);
+    for (const suffix of ['', '-wal', '-shm']) {
+      const p = DB_PATH + suffix;
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    }
+  }
+}
+
+migrateIfNeeded();
 
 const db = new Database(DB_PATH);
 db.pragma('foreign_keys = ON');
@@ -73,8 +114,22 @@ function runSeed() {
     const universities = [
       ['Imperial College London', 'London', 'United Kingdom', 2, 96, 93,
         'A world-leading science-based university renowned for education, research and innovation across engineering, medicine, business and natural sciences.'],
+      ['UCL', 'London', 'United Kingdom', 9, 91, 88,
+        'A multidisciplinary global university in the heart of London, consistently ranked among the world\'s best for research strength and graduate outcomes.'],
+      ['University of Edinburgh', 'Edinburgh', 'United Kingdom', 27, 85, 82,
+        'Scotland\'s ancient flagship university, combining a centuries-old research tradition with strong links into finance, tech and the creative industries.'],
+      ['King\'s College London', 'London', 'United Kingdom', 31, 84, 80,
+        'A leading London university with deep ties to the capital\'s health, legal, finance and public policy sectors.'],
       ['University of Manchester', 'Manchester', 'United Kingdom', 34, 86, 81,
         'One of the UK\'s largest and most prestigious universities, with a strong industry-facing curriculum and a globally recognised alumni network.'],
+      ['University of Birmingham', 'Birmingham', 'United Kingdom', 76, 70, 68,
+        'A civic Russell Group university with strong regional employer partnerships across engineering, business and the public sector.'],
+      ['University of Leeds', 'Leeds', 'United Kingdom', 86, 68, 66,
+        'A large research-intensive university known for its strong graduate employability support and broad subject range.'],
+      ['University of Nottingham', 'Nottingham', 'United Kingdom', 97, 65, 64,
+        'A global university with campuses across three continents and long-standing employer relationships in engineering and business.'],
+      ['University of Portsmouth', 'Portsmouth', 'United Kingdom', 502, 40, 50,
+        'A modern, career-focused university with strong applied courses and close links to regional and maritime employers.'],
       ['University of Salford', 'Salford', 'United Kingdom', 801, 42, 55,
         'A modern, career-focused university with strong employer links across media, engineering and health, known for embedded placement years.'],
       ['Monash University', 'Melbourne', 'Australia', 37, 87, 84,
@@ -126,8 +181,17 @@ function runSeed() {
       return r.lastInsertRowid;
     }
 
+    createUser('qs_admin', 'admin@qs.demo', 'QS Platform Admin', null, null);
+
     createUser('university_admin', 'careers@imperial.demo', 'Dr. Helen Chen', uniId['Imperial College London'], null);
+    createUser('university_admin', 'careers@ucl.demo', 'Dr. Sarah Wong', uniId['UCL'], null);
+    createUser('university_admin', 'careers@edinburgh.demo', 'Prof. Ian Mackenzie', uniId['University of Edinburgh'], null);
+    createUser('university_admin', 'careers@kcl.demo', 'Dr. Olivia Bennett', uniId["King's College London"], null);
     createUser('university_admin', 'careers@manchester.demo', 'Prof. Alan Whitmore', uniId['University of Manchester'], null);
+    createUser('university_admin', 'careers@birmingham.demo', 'Dr. Marcus Fielding', uniId['University of Birmingham'], null);
+    createUser('university_admin', 'careers@leeds.demo', 'Dr. Naomi Clarke', uniId['University of Leeds'], null);
+    createUser('university_admin', 'careers@nottingham.demo', 'Dr. Thomas Reid', uniId['University of Nottingham'], null);
+    createUser('university_admin', 'careers@portsmouth.demo', 'Dr. Ellen Shaw', uniId['University of Portsmouth'], null);
     createUser('university_admin', 'careers@salford.demo', 'Dr. Rachel Osborne', uniId['University of Salford'], null);
     createUser('university_admin', 'careers@monash.demo', 'Dr. Michael Tran', uniId['Monash University'], null);
 
@@ -213,7 +277,7 @@ function runSeed() {
         skills: ['Excel', 'Data Analysis', 'Financial Modelling', 'Statistics', 'Communication'],
       },
       {
-        email: 'emma@student.demo', name: 'Emma Clarke', university: 'Imperial College London',
+        email: 'emma@student.demo', name: 'Emma Clarke', university: 'UCL',
         headline: 'MEng Mechanical Engineering | future engineer', about: 'Mechanical engineering student with a strong grounding in project management and problem solving, looking for graduate engineering roles.',
         interests: 'Engineering', locations: 'Manchester,Dubai', workRights: 1, relocate: 1,
         openToOpps: 1, verified: 1, placementHours: null,
@@ -253,7 +317,7 @@ function runSeed() {
         skills: ['Python', 'Java', 'SQL', 'Machine Learning', 'Cloud Computing (AWS)', 'Git', 'Data Engineering', 'Problem Solving'],
       },
       {
-        email: 'noah@student.demo', name: 'Noah Patel', university: 'University of Manchester',
+        email: 'noah@student.demo', name: 'Noah Patel', university: 'University of Edinburgh',
         headline: 'BSc Economics | aspiring financial analyst', about: 'Economics student with a keen interest in financial markets and quantitative analysis.',
         interests: 'Finance', locations: 'New York', workRights: 1, relocate: 1,
         openToOpps: 1, verified: 0, placementHours: null,
@@ -554,7 +618,7 @@ function runSeed() {
     follow('grace@student.demo', 'company', 'Kaleidoscope Media');
     follow('grace@student.demo', 'university', 'Imperial College London');
     follow('noah@student.demo', 'company', 'Ashford Capital');
-    follow('noah@student.demo', 'university', 'University of Manchester');
+    follow('noah@student.demo', 'university', 'University of Edinburgh');
     follow('fatima@student.demo', 'company', 'Vitalis Health');
     follow('fatima@student.demo', 'university', 'University of Salford');
     follow('ben@student.demo', 'company', 'Kaleidoscope Media');
@@ -715,6 +779,12 @@ function runSeed() {
       { from: 'careers@salford.demo', fromName: 'Dr. Rachel Osborne', body: "Hi Priya, just confirming your MSc Data Science enrolment has been verified on QS Connect." },
       { from: 'priya@student.demo', body: "Thank you so much, appreciate the quick turnaround!" },
     ]);
+
+    // -- schema version marker ---------------------------------------------
+    db.prepare(`
+      INSERT INTO app_meta (key, value) VALUES ('schema_version', ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `).run(SCHEMA_VERSION);
   });
 
   seedTxn();
@@ -733,7 +803,7 @@ function resetAndSeed() {
     'post_comments', 'post_likes', 'posts', 'follows', 'connections',
     'role_invites', 'application_events', 'applications', 'role_skills', 'roles',
     'student_skills', 'skills', 'experience_entries', 'education_claims',
-    'student_profiles', 'users', 'companies', 'universities',
+    'student_profiles', 'users', 'companies', 'universities', 'app_meta',
   ];
   const wipe = db.transaction(() => {
     // Tables use plain `INTEGER PRIMARY KEY` (no AUTOINCREMENT), so SQLite

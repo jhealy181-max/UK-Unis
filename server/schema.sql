@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS universities (
   qs_rank INTEGER,                    -- QS World University Ranking position
   employer_reputation REAL,           -- 0-100 QS indicator scores
   employment_outcomes REAL,
-  about TEXT
+  about TEXT,
+  status TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('approved','pending','rejected'))
 );
 
 CREATE TABLE IF NOT EXISTS companies (
@@ -24,12 +25,13 @@ CREATE TABLE IF NOT EXISTS companies (
 
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY,
-  role TEXT NOT NULL CHECK (role IN ('student','employer','university_admin')),
+  role TEXT NOT NULL CHECK (role IN ('student','employer','university_admin','qs_admin')),
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   name TEXT NOT NULL,
   university_id INTEGER REFERENCES universities(id),   -- students + uni admins
   company_id INTEGER REFERENCES companies(id),         -- employers
+  active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -93,6 +95,7 @@ CREATE TABLE IF NOT EXISTS roles (
   sponsors_visa INTEGER NOT NULL DEFAULT 0,
   deadline TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','closed')),
+  hidden INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -154,6 +157,7 @@ CREATE TABLE IF NOT EXISTS posts (
   org_type TEXT CHECK (org_type IN ('university','company')),  -- non-null: posted as the org
   org_id INTEGER,
   body TEXT NOT NULL,
+  hidden INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -199,6 +203,7 @@ CREATE TABLE IF NOT EXISTS events (
   format TEXT NOT NULL DEFAULT 'virtual' CHECK (format IN ('virtual','in_person')),
   location TEXT,
   capacity INTEGER,
+  hidden INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -216,6 +221,11 @@ CREATE TABLE IF NOT EXISTS notifications (
   link TEXT,                           -- client route e.g. /student/applications
   read INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS app_meta (
+  key TEXT PRIMARY KEY,
+  value TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_apps_role ON applications(role_id);

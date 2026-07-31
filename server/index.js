@@ -36,6 +36,7 @@ app.use('/api', require('./routes/messaging'));
 app.use('/api', require('./routes/events'));
 app.use('/api', require('./routes/university'));
 app.use('/api', require('./routes/notifications'));
+app.use('/api', require('./routes/admin'));
 app.use('/api', require('./routes/dev'));
 
 // -- API 404 (must come after all /api routes, before static/SPA fallback) --

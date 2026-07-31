@@ -1,0 +1,2456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QS Connect — Prototype</title>
+<style>
+:root {
+  --navy: #0c1c3c;
+  --navy-800: #14284f;
+  --navy-100: #e8ecf4;
+  --qs-yellow: #ffd700;
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --border: #e2e7ef;
+  --text: #17233b;
+  --text-muted: #63708a;
+  --green: #16a34a;
+  --green-strong: #15803d;
+  --amber: #d97706;
+  --red: #dc2626;
+  --accent: #0c1c3c;
+  --accent-soft: #e8ecf4;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(12, 28, 60, 0.08), 0 4px 16px rgba(12, 28, 60, 0.05);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+html[data-portal='student'] { --accent: #2563eb; --accent-soft: #e4edfd; }
+html[data-portal='employer'] { --accent: #0d9488; --accent-soft: #e0f2f0; }
+html[data-portal='university'] { --accent: #d97706; --accent-soft: #faeedd; }
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14.5px; line-height: 1.5; }
+h1, h2, h3, h4 { margin: 0 0 0.4em; line-height: 1.25; }
+a { color: var(--accent); text-decoration: none; }
+button { font-family: inherit; }
+.hidden { display: none !important; }
+img, svg { max-width: 100%; }
+
+/* ============ layout primitives ============ */
+.page { max-width: 1180px; margin: 0 auto; padding: 24px 24px 64px; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.page-head h1 { font-size: 22px; }
+
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 900px) {
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.wrap { flex-wrap: wrap; }
+
+.muted { color: var(--text-muted); }
+.small { font-size: 12.5px; }
+
+/* ============ buttons ============ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 16px; border-radius: var(--radius-sm); border: 1px solid transparent;
+  background: var(--surface); color: var(--text); font-weight: 600; font-size: 14px;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  text-decoration: none; line-height: 1.2;
+}
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-ghost { background: transparent; border-color: var(--border); color: var(--text); }
+.btn-ghost:hover:not(:disabled) { background: var(--bg); }
+.btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
+.btn-danger:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-sm { padding: 6px 12px; font-size: 12.5px; }
+.btn-link { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 13px; cursor: pointer; padding: 0; }
+.btn-link:hover { text-decoration: underline; }
+.btn-block { width: 100%; }
+
+/* ============ form fields ============ */
+.field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.input, .select, .textarea {
+  border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px;
+  font-size: 14px; font-family: inherit; background: var(--surface); color: var(--text); width: 100%;
+}
+.input:focus, .select:focus, .textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.textarea { resize: vertical; min-height: 64px; }
+
+/* ============ table ============ */
+.table-wrap { width: 100%; overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px; }
+.table th, .table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.table th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+.table tbody tr:hover { background: var(--bg); }
+
+/* ============ progress ============ */
+.progress { height: 6px; border-radius: 4px; background: var(--accent-soft); overflow: hidden; margin-top: 4px; }
+.progress-bar { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+
+/* ============ kanban ============ */
+.kanban { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+@media (max-width: 1024px) { .kanban { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px) { .kanban { grid-template-columns: 1fr; } }
+.kanban-col { background: var(--bg); border-radius: var(--radius); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 80px; }
+.kanban-col-head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 12.5px; padding: 4px 4px 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.kanban-card { background: var(--surface); border-radius: var(--radius-sm); padding: 10px 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px; }
+.kanban-card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
+/* ============ card ============ */
+.card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 12px; }
+.card-title { font-size: 15px; font-weight: 700; }
+
+/* ============ avatar ============ */
+.avatar { flex-shrink: 0; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; user-select: none; }
+
+/* ============ badge ============ */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.badge-verified { background: var(--qs-yellow); color: var(--navy); }
+.badge-neutral { background: var(--accent-soft); color: var(--accent); }
+.badge-status { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+.badge-status-applied { background: #eef2ff; color: #4338ca; border-color: transparent; }
+.badge-status-shortlisted { background: #e0f2fe; color: #0369a1; border-color: transparent; }
+.badge-status-interview { background: #fef9c3; color: #a16207; border-color: transparent; }
+.badge-status-offer { background: #dcfce7; color: #15803d; border-color: transparent; }
+.badge-status-hired { background: #16a34a; color: #fff; border-color: transparent; }
+.badge-status-rejected { background: #fee2e2; color: #b91c1c; border-color: transparent; }
+.badge-status-withdrawn { background: var(--bg); color: var(--text-muted); border-color: var(--border); }
+.badge-status-pending { background: #fef9c3; color: #a16207; border-color: transparent; }
+.badge-status-approved { background: #dcfce7; color: #15803d; border-color: transparent; }
+.badge-status-open { background: #dcfce7; color: #15803d; border-color: transparent; }
+.badge-status-closed { background: var(--bg); color: var(--text-muted); border-color: var(--border); }
+
+/* ============ match pill ============ */
+.match-pill { display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space:nowrap; }
+.match-pill-strong { background: #16a34a; color: #fff; }
+.match-pill-good { background: #dcfce7; color: #15803d; }
+.match-pill-fair { background: #fef3c7; color: #b45309; }
+.match-pill-weak { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* ============ stat card ============ */
+.stat-card { background: var(--bg); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; border-left: 3px solid var(--stat-accent, var(--accent)); }
+.stat-card-icon { font-size: 18px; }
+.stat-card-value { font-size: 22px; font-weight: 800; color: var(--text); }
+.stat-card-label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+
+/* ============ empty state ============ */
+.empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 32px 16px; color: var(--text-muted); }
+.empty-state-icon { font-size: 32px; }
+.empty-state-title { font-weight: 700; color: var(--text); font-size: 15px; }
+.empty-state-action { margin-top: 8px; }
+
+/* ============ modal ============ */
+.modal-overlay { position: fixed; inset: 0; background: rgba(12, 28, 60, 0.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+.modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 520px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(12,28,60,0.3); }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+.modal-close { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; border-radius: 6px; }
+.modal-close:hover { background: var(--bg); }
+.modal-body { padding: 20px; overflow-y: auto; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ============ skill tag ============ */
+.skill-tag { display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+.skill-tag-overlap { background: #dcfce7; color: #15803d; }
+.skill-tag-gap { background: transparent; color: var(--text-muted); border: 1px dashed var(--border); }
+.skill-tag-high { background: var(--accent); color: #fff; }
+.skill-tag-medium { background: var(--accent-soft); color: var(--accent); }
+.skill-tag-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.skill-tag-pick { cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text); user-select: none; }
+.skill-tag-pick.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+.weight-tag { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: rgba(12,28,60,0.08); font-size: 10px; cursor: pointer; }
+.skill-tag-pick.selected .weight-tag { background: rgba(255,255,255,0.28); color: #fff; }
+
+/* ============ tab bar ============ */
+.tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); overflow-x:auto; }
+.tab-bar-item { background: none; border: none; padding: 10px 14px; font-size: 13.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 6px; white-space:nowrap; }
+.tab-bar-item.active { color: var(--accent); border-color: var(--accent); }
+.tab-bar-count { background: var(--bg); border-radius: 999px; padding: 1px 7px; font-size: 11px; }
+.tab-bar-item.active .tab-bar-count { background: var(--accent-soft); color: var(--accent); }
+
+/* ============ posts ============ */
+.post-composer { display: flex; flex-direction: column; gap: 10px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 18px; margin-bottom: 16px; }
+.post-composer-actions { display: flex; justify-content: flex-end; }
+.post-card { margin-bottom: 16px; }
+.post-card-head { margin-bottom: 10px; }
+.post-card-author { font-weight: 700; font-size: 14px; }
+.post-card-body { white-space: pre-wrap; font-size: 14px; line-height: 1.5; margin-bottom: 10px; }
+.post-card-actions { display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+.active-like { color: var(--accent); }
+.post-card-comments { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.post-card-comment { font-size: 13px; background: var(--bg); padding: 8px 10px; border-radius: var(--radius-sm); }
+.post-card-comment-author { font-weight: 700; margin-right: 4px; }
+.post-card-comment-form { margin-top: 4px; }
+
+/* ============ app shell ============ */
+.shell { min-height: 100vh; display: flex; flex-direction: column; }
+.shell-topbar {
+  position: sticky; top: 0; z-index: 50; background: var(--navy); color: #fff;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 20px; height: 58px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.brand { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.brand-mark {
+  width: 30px; height: 30px; border-radius: 8px; background: var(--qs-yellow); color: var(--navy);
+  display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 17px; flex-shrink:0;
+}
+.brand-word { font-weight: 800; font-size: 16px; letter-spacing: -0.01em; color: inherit; }
+.landing .brand-word, .auth-panel .brand-word { color: var(--navy); }
+
+.shell-topbar-actions { display: flex; align-items: center; gap: 6px; }
+.icon-btn {
+  position: relative; background: none; border: none; color: #fff; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+}
+.icon-btn:hover { background: rgba(255,255,255,0.12); }
+.unread-dot { position: absolute; top: 6px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--qs-yellow); border: 1.5px solid var(--navy); }
+.unread-count { position: absolute; top: -2px; right: -4px; background: var(--qs-yellow); color: var(--navy); font-size: 10px; font-weight: 800; border-radius: 999px; padding: 1px 5px; min-width: 16px; text-align: center; }
+
+.shell-menu { position: relative; }
+.avatar-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #fff; padding: 4px; border-radius: 999px; }
+.avatar-btn:hover { background: rgba(255,255,255,0.12); }
+
+.dropdown {
+  position: absolute; right: 0; top: calc(100% + 8px); background: var(--surface); color: var(--text);
+  border-radius: var(--radius); box-shadow: 0 12px 32px rgba(12,28,60,0.22); width: 260px; overflow: hidden; z-index: 60;
+}
+.dropdown-wide { width: 340px; }
+.dropdown-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; }
+.dropdown-user-name { font-weight: 700; }
+.dropdown-list { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; }
+.dropdown-item { text-align: left; background: none; border: none; padding: 12px 16px; cursor: pointer; font-size: 13.5px; color: var(--text); border-bottom: 1px solid var(--border); width:100%; }
+.dropdown-item:last-child { border-bottom: none; }
+.dropdown-item:hover { background: var(--bg); }
+.dropdown-item.unread { background: var(--accent-soft); }
+.dropdown-empty { padding: 16px; text-align: center; }
+
+.shell-body { display: flex; flex: 1; }
+.shell-sidebar {
+  width: 220px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+  padding: 16px 10px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 58px; height: calc(100vh - 58px); overflow-y:auto;
+}
+.shell-nav-link {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm);
+  color: var(--text); font-weight: 600; font-size: 13.5px; text-decoration: none; cursor:pointer; background:none; border:none; width:100%;
+}
+.shell-nav-link svg { flex-shrink: 0; }
+.shell-nav-link:hover { background: var(--bg); }
+.shell-nav-link.active { background: var(--accent-soft); color: var(--accent); }
+.shell-main { flex: 1; min-width: 0; }
+
+@media (max-width: 900px) {
+  .shell-sidebar { width: 60px; align-items: center; }
+  .shell-sidebar .nav-label { display: none; }
+  .shell-nav-link { justify-content: center; padding: 10px; }
+}
+
+.app-loading { display: flex; align-items: center; justify-content: center; min-height: 60vh; color: var(--text-muted); }
+
+/* ============ landing ============ */
+.landing { max-width: 1180px; margin: 0 auto; padding: 20px 24px 64px; }
+.landing-nav { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 40px; }
+.landing-hero { text-align: center; max-width: 780px; margin: 0 auto 48px; }
+.landing-hero h1 { font-size: 40px; line-height: 1.15; color: var(--navy); margin-bottom: 14px; }
+.landing-hero-sub { font-size: 16px; color: var(--text-muted); }
+@media (max-width: 640px) { .landing-hero h1 { font-size: 28px; } }
+
+.landing-portals { margin-bottom: 56px; }
+.portal-card {
+  display: flex; flex-direction: column; gap: 8px; background: var(--surface); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 24px; text-decoration: none; color: var(--text);
+  border-top: 4px solid var(--portal-color); transition: transform 0.15s, box-shadow 0.15s; cursor:pointer; text-align:left; width:100%;
+}
+.portal-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(12,28,60,0.15); }
+.portal-card-label { font-size: 19px; font-weight: 800; color: var(--portal-color); }
+.portal-card-blurb { color: var(--text-muted); font-size: 13.5px; flex: 1; }
+.portal-card-cta { font-weight: 700; color: var(--portal-color); font-size: 13.5px; }
+
+.landing-diff { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 48px; padding: 32px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+@media (max-width: 700px) { .landing-diff { grid-template-columns: 1fr; } }
+.landing-diff-item h3 { color: var(--navy); font-size: 15px; }
+
+.landing-demo { text-align: center; margin-bottom: 32px; }
+.demo-panel { max-width: 360px; margin: 14px auto 0; background: var(--bg); border-radius: var(--radius-sm); padding: 14px 18px; text-align: left; }
+.demo-panel-row { font-size: 13px; padding: 3px 0; }
+
+.landing-footer { text-align: center; }
+
+/* ============ auth pages ============ */
+.auth-page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, var(--navy) 0%, var(--navy-800) 55%, var(--portal-color, var(--navy)) 220%);
+  padding: 24px;
+}
+.auth-panel { background: var(--surface); border-radius: var(--radius); box-shadow: 0 24px 60px rgba(0,0,0,0.25); padding: 36px 32px; max-width: 460px; width: 100%; }
+.auth-panel h1 { font-size: 22px; margin: 10px 0 4px; }
+.auth-panel .brand-word { color: var(--navy); }
+.auth-portal-tag { display: inline-block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--portal-color); background: var(--accent-soft); padding: 3px 10px; border-radius: 999px; margin-top: 16px; }
+.auth-panel-footer { margin-top: 18px; display: flex; flex-direction: column; gap: 6px; }
+
+.demo-account-list { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; max-height: 360px; overflow-y:auto; }
+.demo-account-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; background: var(--surface); text-align: left; width: 100%; }
+.demo-account-row:hover { background: var(--bg); border-color: var(--portal-color, var(--accent)); }
+.demo-account-row-body { flex: 1; min-width: 0; }
+.demo-account-row-name { font-weight: 700; font-size: 13.5px; }
+.demo-account-row-email { font-size: 12px; color: var(--text-muted); }
+
+/* ============ feed ============ */
+.feed-layout { display: grid; grid-template-columns: 240px 1fr 280px; gap: 20px; align-items: start; }
+@media (max-width: 1024px) { .feed-layout { grid-template-columns: 1fr 280px; } .feed-col-left { display: none; } }
+@media (max-width: 760px) { .feed-layout { grid-template-columns: 1fr; } .feed-col-right { display: none; } }
+.profile-summary { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.profile-summary-name { font-weight: 700; font-size: 15px; margin-top: 8px; }
+.profile-strength { width: 100%; margin-top: 12px; }
+.suggestion-row { justify-content: space-between; }
+
+/* ============ messages ============ */
+.messages-layout { display: grid; grid-template-columns: 300px 1fr; gap: 0; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; min-height: 560px; }
+@media (max-width: 760px) { .messages-layout { grid-template-columns: 1fr; } }
+.messages-list { border-right: 1px solid var(--border); overflow-y: auto; max-height: 640px; }
+.messages-thread-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: none; border: none; border-bottom: 1px solid var(--border); cursor: pointer; text-align: left; position: relative; }
+.messages-thread-item:hover { background: var(--bg); }
+.messages-thread-item.active { background: var(--accent-soft); }
+.messages-thread-item-body { flex: 1; min-width: 0; }
+.messages-thread-item-name { font-weight: 700; font-size: 13.5px; }
+.messages-thread-item-preview { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.messages-pane { display: flex; flex-direction: column; }
+.messages-pane-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.messages-pane-body { flex: 1; padding: 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; max-height: 480px; }
+.message-bubble { max-width: 70%; align-self: flex-start; }
+.message-bubble.mine { align-self: flex-end; }
+.message-bubble-body { background: var(--bg); padding: 9px 13px; border-radius: 14px 14px 14px 4px; font-size: 13.5px; }
+.message-bubble.mine .message-bubble-body { background: var(--accent); color: #fff; border-radius: 14px 14px 4px 14px; }
+.message-bubble-time { margin-top: 2px; }
+.message-bubble.mine .message-bubble-time { text-align: right; }
+.messages-pane-composer { padding: 14px 18px; border-top: 1px solid var(--border); }
+.messages-pane-composer .input { flex: 1; }
+
+/* ============ org pages ============ */
+.qs-data-panel { margin-top: 16px; }
+
+/* ============ toast ============ */
+.toast-stack { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 200; max-width: calc(100vw - 40px); }
+.toast { padding: 12px 18px; border-radius: var(--radius-sm); box-shadow: 0 10px 30px rgba(12,28,60,0.25); font-size: 13.5px; font-weight: 600; cursor: pointer; max-width: 320px; }
+.toast-success { background: var(--navy); color: #fff; }
+.toast-error { background: var(--red); color: #fff; }
+
+/* ============ misc ============ */
+.stage-bar { display:flex; height:8px; border-radius:4px; overflow:hidden; margin: 4px 0 10px; background:var(--bg); }
+.link-plain { color: inherit; text-decoration: none; }
+.filter-bar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+.qty-badge { font-size:11px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toastHost" class="toast-stack"></div>
+<div id="modalHost"></div>
+<script>
+'use strict';
+/* =========================================================================
+   UTILITIES
+   ========================================================================= */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function fmtDate(x){ if(!x) return ''; var d=new Date(x); if(isNaN(d)) return ''; return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function fmtTime(x){ var d=new Date(x); var today=new Date(); if(d.toDateString()===today.toDateString()) return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+var AV_PALETTE = ['#2563eb','#0d9488','#d97706','#7c3aed','#db2777','#0891b2','#65a30d','#dc2626'];
+function initials(name){ name=name||''; var parts=name.trim().split(/\s+/).filter(Boolean); if(!parts.length) return '?'; if(parts.length===1) return parts[0].slice(0,2).toUpperCase(); return (parts[0][0]+parts[parts.length-1][0]).toUpperCase(); }
+function colorFor(name){ name=name||''; var hash=0; for(var i=0;i<name.length;i++) hash = name.charCodeAt(i) + ((hash<<5)-hash); return AV_PALETTE[Math.abs(hash)%AV_PALETTE.length]; }
+function Avatar(name, size, color){ size=size||40; var bg=color||colorFor(name||''); var fs=Math.max(11, size*0.38); return '<div class="avatar" style="width:'+size+'px;height:'+size+'px;background:'+bg+';font-size:'+fs+'px;">'+esc(initials(name))+'</div>'; }
+
+function Card(opts){ opts=opts||{}; var title=opts.title, action=opts.action, body=opts.body||'', cls=opts.cls||''; var head=''; if(title||action){ head='<div class="card-head">'+(title?'<h3 class="card-title">'+esc(title)+'</h3>':'<span></span>')+(action||'')+'</div>'; } return '<div class="card '+cls+'">'+head+'<div class="card-body">'+body+'</div></div>'; }
+var STATUS_LABELS = { applied:'Applied', shortlisted:'Shortlisted', interview:'Interview', offer:'Offer', hired:'Hired', rejected:'Rejected', withdrawn:'Withdrawn', pending:'Pending', approved:'Approved', open:'Open', closed:'Closed' };
+function Badge(kind, text){ kind=kind||'neutral'; if(kind==='verified'){ return '<span class="badge badge-verified" title="Verified"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 12.5l2 2 4-4.5" stroke="#0c1c3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'+esc(text||'Verified')+'</span>'; } if(kind.indexOf('status-')===0){ var status=kind.slice(7); return '<span class="badge badge-status badge-status-'+status+'">'+esc(text||STATUS_LABELS[status]||status)+'</span>'; } return '<span class="badge badge-neutral">'+esc(text||'')+'</span>'; }
+function MatchPill(score){ var s=Math.round(score||0); var level='weak'; if(s>=80) level='strong'; else if(s>=60) level='good'; else if(s>=40) level='fair'; return '<span class="match-pill match-pill-'+level+'">'+s+'% match</span>'; }
+function SkillTag(name, variant){ variant=variant||'default'; return '<span class="skill-tag skill-tag-'+variant+'">'+esc(name)+'</span>'; }
+function StatCard(label, value, icon, accent){ return '<div class="stat-card"'+(accent?' style="--stat-accent:'+accent+'"':'')+'>'+(icon?'<div class="stat-card-icon">'+icon+'</div>':'')+'<div class="stat-card-value">'+esc(value)+'</div><div class="stat-card-label">'+esc(label)+'</div></div>'; }
+function EmptyState(icon, title, text, actionHtml){ return '<div class="empty-state">'+(icon?'<div class="empty-state-icon">'+icon+'</div>':'')+(title?'<div class="empty-state-title">'+esc(title)+'</div>':'')+(text?'<div class="empty-state-text muted">'+esc(text)+'</div>':'')+(actionHtml?'<div class="empty-state-action">'+actionHtml+'</div>':'')+'</div>'; }
+function TabBar(tabs, active, ns){ ns=ns||'default'; return '<div class="tab-bar" role="tablist">'+tabs.map(function(t){ return '<button type="button" role="tab" class="tab-bar-item '+(t.id===active?'active':'')+'" onclick="App.setTabFor(\''+ns+'\',\''+t.id+'\')">'+esc(t.label)+(typeof t.count==='number'?'<span class="tab-bar-count">'+t.count+'</span>':'')+'</button>'; }).join('')+'</div>'; }
+
+var ICONS = {
+  feed: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" stroke-linejoin="round"/><path d="M8 9h8M8 13h8M8 17h4" stroke-linecap="round"/></svg>',
+  home: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v10h14V10" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  roles: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke-linecap="round"/></svg>',
+  applications: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l1 3H8l1-3z" stroke-linejoin="round"/><rect x="5" y="6" width="14" height="15" rx="2"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  network: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="15" r="3"/><path d="M6 20c0-2.5 1.8-4 4-4M15 12c-1 0-2.2.4-3 1.2" stroke-linecap="round"/></svg>',
+  messages: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H8l-5 4V6a2 2 0 012-2h14a2 2 0 012 2v9z" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  events: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke-linecap="round"/></svg>',
+  profile: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6" stroke-linecap="round"/></svg>',
+  verify: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cohort: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5M15 20c0-2 1.5-4 4-4" stroke-linecap="round"/></svg>',
+  placements: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18" stroke-linecap="round"/><path d="M5 4h13l-3 4 3 4H5" stroke-linejoin="round"/></svg>',
+  engagement: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7" stroke-linecap="round"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 01-3.4 0" stroke-linecap="round"/></svg>',
+  chevron: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  heart: '<svg width="16" height="16" viewBox="0 0 24 24" fill="{{FILL}}" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-1 9H4a2 2 0 00-2 2v7a2 2 0 002 2h13.28a2 2 0 002-1.7l1.38-9A2 2 0 0018.7 9H14z" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  comment: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+/* =========================================================================
+   SEED DATA (ported from server/db.js)
+   ========================================================================= */
+var state, session, ui = { tab:{}, roleFormSkills:{}, profileFormSkills:null, expandedNote:null, openComments:{}, expandedEvent:null };
+
+function buildSeed(){
+  var st = {
+    seq:{}, universities:[], companies:[], users:[], skills:[],
+    studentProfiles:[], studentSkills:[], educationClaims:[], experienceEntries:[],
+    roles:[], roleSkills:[], applications:[], applicationEvents:[], roleInvites:[],
+    connections:[], follows:[], posts:[], postLikes:[], postComments:[],
+    events:[], eventRegistrations:[], threads:[], messages:[], notifications:[]
+  };
+  state = st;
+  var clock = Date.parse('2026-07-14T08:00:00Z');
+  function tick(mins){ clock += (mins||11)*60000; return new Date(clock).toISOString(); }
+  function next(key){ st.seq[key] = (st.seq[key]||0)+1; return st.seq[key]; }
+
+  var uniId={}, companyId={}, userId={}, skillId={}, roleId={};
+
+  function addUni(name,city,country,qs_rank,employer_reputation,employment_outcomes,about){
+    var id=next('university');
+    st.universities.push({id:id,name:name,city:city,country:country,qs_rank:qs_rank,employer_reputation:employer_reputation,employment_outcomes:employment_outcomes,about:about});
+    uniId[name]=id; return id;
+  }
+  addUni('Imperial College London','London','United Kingdom',2,96,93,'A world-leading science-based university renowned for education, research and innovation across engineering, medicine, business and natural sciences.');
+  addUni('University of Manchester','Manchester','United Kingdom',34,86,81,"One of the UK's largest and most prestigious universities, with a strong industry-facing curriculum and a globally recognised alumni network.");
+  addUni('University of Salford','Salford','United Kingdom',801,42,55,'A modern, career-focused university with strong employer links across media, engineering and health, known for embedded placement years.');
+  addUni('Monash University','Melbourne','Australia',37,87,84,"Australia's largest university, a member of the Group of Eight, with a global campus network and strong graduate employment outcomes.");
+
+  function addCompany(name,sectors,locations,about,banner_color,employer_rep_participant){
+    var id=next('company');
+    st.companies.push({id:id,name:name,sectors:sectors,locations:locations,about:about,banner_color:banner_color,employer_rep_participant:employer_rep_participant});
+    companyId[name]=id; return id;
+  }
+  addCompany('NovaTech Systems','Technology','London,Berlin,Remote','NovaTech Systems builds cloud-native software platforms for global enterprises, powering commerce, logistics and fintech at scale.','#0D9488',1);
+  addCompany('Meridian Consulting Group','Consulting','London,New York,Singapore','Meridian Consulting Group advises Fortune 500 clients on strategy, operations and digital transformation across three continents.','#1E3A8A',1);
+  addCompany('Ashford Capital','Finance','London,New York','Ashford Capital is a global investment bank offering graduate and internship pathways into markets, banking and asset management.','#7C2D12',1);
+  addCompany('Brunel Engineering Co','Engineering','Manchester,Birmingham,Dubai','Brunel Engineering Co delivers infrastructure and industrial engineering projects worldwide, from renewable energy to transport.','#92400E',1);
+  addCompany('Vitalis Health','Health','London,Sydney','Vitalis Health is a healthcare analytics and public health consultancy improving population health outcomes globally.','#065F46',1);
+  addCompany('Kaleidoscope Media','Media','London,Los Angeles,Remote','Kaleidoscope Media is a creative agency producing campaigns and content for global consumer brands.','#BE185D',0);
+
+  function addUser(role,email,name,universityId,companyIdVal){
+    var id=next('user');
+    st.users.push({id:id,role:role,email:email,name:name,university_id:universityId||null,company_id:companyIdVal||null});
+    userId[email]=id; return id;
+  }
+  addUser('university_admin','careers@imperial.demo','Dr. Helen Chen',uniId['Imperial College London'],null);
+  addUser('university_admin','careers@manchester.demo','Prof. Alan Whitmore',uniId['University of Manchester'],null);
+  addUser('university_admin','careers@salford.demo','Dr. Rachel Osborne',uniId['University of Salford'],null);
+  addUser('university_admin','careers@monash.demo','Dr. Michael Tran',uniId['Monash University'],null);
+
+  addUser('employer','recruiter@novatech.demo','Marcus Reid',null,companyId['NovaTech Systems']);
+  addUser('employer','recruiter@meridian.demo','Charlotte Hughes',null,companyId['Meridian Consulting Group']);
+  addUser('employer','recruiter@ashfordcapital.demo','Daniel Osei',null,companyId['Ashford Capital']);
+  addUser('employer','recruiter@brunelengineering.demo','Isabelle Martin',null,companyId['Brunel Engineering Co']);
+  addUser('employer','recruiter@vitalishealth.demo','Ryan Doyle',null,companyId['Vitalis Health']);
+  addUser('employer','recruiter@kaleidoscopemedia.demo','Zara Ahmed',null,companyId['Kaleidoscope Media']);
+
+  function addSkill(name,category){ var id=next('skill'); st.skills.push({id:id,name:name,category:category}); skillId[name]=id; return id; }
+  [['JavaScript','Technical'],['Python','Technical'],['Java','Technical'],['React','Technical'],['Node.js','Technical'],['SQL','Technical'],
+   ['Cloud Computing (AWS)','Technical'],['Git','Technical'],['C++','Technical'],['DevOps','Technical'],['Cybersecurity','Technical'],['Mobile Development','Technical'],
+   ['Data Analysis','Data'],['Machine Learning','Data'],['Excel','Data'],['Power BI','Data'],['Statistics','Data'],['Data Visualization','Data'],['R','Data'],['Data Engineering','Data'],
+   ['Financial Modelling','Business'],['Market Research','Business'],['Project Management','Business'],['Strategy Consulting','Business'],['Accounting','Business'],
+   ['Marketing','Business'],['Sales','Business'],['Business Analysis','Business'],['Negotiation','Business'],['Supply Chain Management','Business'],
+   ['Communication','Soft'],['Teamwork','Soft'],['Leadership','Soft'],['Problem Solving','Soft'],['Time Management','Soft'],['Adaptability','Soft'],
+   ['Critical Thinking','Soft'],['Presentation Skills','Soft'],['Stakeholder Management','Soft'],['Creativity','Soft']
+  ].forEach(function(s){ addSkill(s[0], s[1]); });
+
+  var studentsMeta = [];
+  function addStudent(def){
+    var uid = addUser('student', def.email, def.name, uniId[def.university], null);
+    st.studentProfiles.push({ user_id:uid, headline:def.headline, about:def.about, interests_sectors:def.interests, preferred_locations:def.locations,
+      work_rights:def.workRights, open_to_relocate:def.relocate, open_to_opportunities:def.openToOpps, verified:def.verified,
+      placement_required_hours:def.placementHours, placement_satisfied:0 });
+    st.educationClaims.push({ id:next('claim'), student_user_id:uid, university_id:uniId[def.university], course:def.course,
+      start_year:def.startYear, end_year:def.endYear, status:def.claimStatus, created_at: tick(200) });
+    def.skills.forEach(function(skName){ st.studentSkills.push({ student_user_id:uid, skill_id:skillId[skName] }); });
+    def.user_id = uid;
+    studentsMeta.push(def);
+  }
+  addStudent({ email:'priya@student.demo', name:'Priya Sharma', university:'University of Salford',
+    headline:'MSc Data Science student | aspiring data analyst', about:'International student from India passionate about turning data into decisions. Looking for placements in tech or health analytics.',
+    interests:'Technology,Health', locations:'London,Manchester', workRights:0, relocate:1, openToOpps:1, verified:1, placementHours:350,
+    course:'MSc Data Science', startYear:2025, endYear:2026, claimStatus:'approved',
+    skills:['Python','SQL','Data Analysis','Machine Learning','Statistics','Excel','Communication'] });
+  addStudent({ email:'tom@student.demo', name:'Tom Whitfield', university:'Imperial College London',
+    headline:'MEng Computer Science | full-stack developer', about:'Final-year computer science student building side projects in React and Node. Keen on graduate software engineering roles in London.',
+    interests:'Technology', locations:'London', workRights:1, relocate:0, openToOpps:1, verified:1, placementHours:null,
+    course:'MEng Computer Science', startYear:2023, endYear:2027, claimStatus:'approved',
+    skills:['JavaScript','React','Node.js','Git','SQL','Cloud Computing (AWS)','Problem Solving'] });
+  addStudent({ email:'aisha@student.demo', name:'Aisha Khan', university:'University of Manchester',
+    headline:'BSc Business Management | future strategy consultant', about:'Business management student with a passion for strategy and market research, seeking consulting graduate schemes.',
+    interests:'Consulting,Media', locations:'London,Manchester', workRights:1, relocate:1, openToOpps:1, verified:1, placementHours:null,
+    course:'BSc Business Management', startYear:2023, endYear:2026, claimStatus:'approved',
+    skills:['Market Research','Strategy Consulting','Business Analysis','Communication','Presentation Skills','Leadership'] });
+  addStudent({ email:'wei@student.demo', name:'Wei Chen', university:'Monash University',
+    headline:'Bachelor of Commerce | data-driven finance enthusiast', about:'International student from China studying commerce, interested in the intersection of finance and health analytics.',
+    interests:'Finance,Health', locations:'Sydney,Melbourne', workRights:0, relocate:1, openToOpps:1, verified:1, placementHours:240,
+    course:'Bachelor of Commerce', startYear:2024, endYear:2027, claimStatus:'approved',
+    skills:['Excel','Data Analysis','Financial Modelling','Statistics','Communication'] });
+  addStudent({ email:'emma@student.demo', name:'Emma Clarke', university:'Imperial College London',
+    headline:'MEng Mechanical Engineering | future engineer', about:'Mechanical engineering student with a strong grounding in project management and problem solving, looking for graduate engineering roles.',
+    interests:'Engineering', locations:'Manchester,Dubai', workRights:1, relocate:1, openToOpps:1, verified:1, placementHours:null,
+    course:'MEng Mechanical Engineering', startYear:2023, endYear:2027, claimStatus:'approved',
+    skills:['C++','Project Management','Problem Solving','Teamwork','Critical Thinking','Adaptability'] });
+  addStudent({ email:'liam@student.demo', name:"Liam O'Brien", university:'University of Manchester',
+    headline:'BEng Civil Engineering | placement year student', about:'Civil engineering student completing a placement-year course, keen on infrastructure and construction projects.',
+    interests:'Engineering', locations:'Manchester', workRights:1, relocate:0, openToOpps:1, verified:1, placementHours:300,
+    course:'BEng Civil Engineering', startYear:2022, endYear:2026, claimStatus:'approved',
+    skills:['Project Management','Supply Chain Management','Teamwork','Communication','Adaptability','Problem Solving'] });
+  addStudent({ email:'sofia@student.demo', name:'Sofia Rossi', university:'University of Salford',
+    headline:'BA Media & Communications | creative storyteller', about:'International student from Italy studying media and communications, passionate about brand storytelling and campaigns.',
+    interests:'Media,Consulting', locations:'London', workRights:0, relocate:1, openToOpps:1, verified:1, placementHours:null,
+    course:'BA Media & Communications', startYear:2023, endYear:2026, claimStatus:'approved',
+    skills:['Marketing','Creativity','Communication','Presentation Skills','Data Visualization'] });
+  addStudent({ email:'james@student.demo', name:'James Okafor', university:'Monash University',
+    headline:'Bachelor of Finance | markets and investment banking', about:'Finance student with strong modelling skills, aiming for graduate roles in investment banking.',
+    interests:'Finance', locations:'New York,London', workRights:1, relocate:1, openToOpps:1, verified:1, placementHours:null,
+    course:'Bachelor of Finance', startYear:2023, endYear:2026, claimStatus:'approved',
+    skills:['Financial Modelling','Excel','Accounting','Negotiation','Statistics','Communication'] });
+  addStudent({ email:'grace@student.demo', name:'Grace Kim', university:'Imperial College London',
+    headline:'MSc Computing | machine learning enthusiast', about:'Computing masters student focused on machine learning and cloud infrastructure, awaiting enrolment verification.',
+    interests:'Technology', locations:'London', workRights:1, relocate:0, openToOpps:1, verified:0, placementHours:null,
+    course:'MSc Computing', startYear:2025, endYear:2026, claimStatus:'pending',
+    skills:['Python','Java','SQL','Machine Learning','Cloud Computing (AWS)','Git','Data Engineering','Problem Solving'] });
+  addStudent({ email:'noah@student.demo', name:'Noah Patel', university:'University of Manchester',
+    headline:'BSc Economics | aspiring financial analyst', about:'Economics student with a keen interest in financial markets and quantitative analysis.',
+    interests:'Finance', locations:'New York', workRights:1, relocate:1, openToOpps:1, verified:0, placementHours:null,
+    course:'BSc Economics', startYear:2024, endYear:2027, claimStatus:'pending',
+    skills:['Financial Modelling','Excel','Statistics','Data Analysis','Communication','Negotiation'] });
+  addStudent({ email:'fatima@student.demo', name:'Fatima Al-Sayed', university:'University of Salford',
+    headline:'BSc Public Health | health data advocate', about:'International student from Egypt studying public health, interested in health analytics and policy.',
+    interests:'Health', locations:'London,Sydney', workRights:0, relocate:1, openToOpps:1, verified:0, placementHours:400,
+    course:'BSc Public Health', startYear:2023, endYear:2026, claimStatus:'pending',
+    skills:['Data Analysis','Statistics','Communication','Stakeholder Management','Excel'] });
+  addStudent({ email:'ben@student.demo', name:'Ben Turner', university:'Monash University',
+    headline:'Bachelor of Engineering | robotics and systems', about:'Engineering student interested in robotics, DevOps and systems reliability.',
+    interests:'Engineering', locations:'Dubai,Manchester', workRights:1, relocate:1, openToOpps:0, verified:0, placementHours:null,
+    course:'Bachelor of Engineering', startYear:2024, endYear:2028, claimStatus:'pending',
+    skills:['C++','Problem Solving','Teamwork','Project Management','Adaptability','Critical Thinking','DevOps','Cybersecurity','Time Management'] });
+
+  function addExp(email,title,org,start,end,desc){ st.experienceEntries.push({ id:next('experience'), student_user_id:userId[email], title:title, organisation:org, start_date:start, end_date:end||null, description:desc }); }
+  addExp('tom@student.demo','Software Engineering Intern','Bright Labs','2025-06-01','2025-09-01','Built internal tooling in React and Node.js used by a 40-person engineering team.');
+  addExp('aisha@student.demo','Business Analyst Intern','Northgate Retail','2024-06-01','2024-08-31','Analysed sales data and presented recommendations to the leadership team on stock allocation.');
+  addExp('emma@student.demo','Engineering Society President','Imperial College Union','2024-09-01',null,'Lead a 200-member student society organising employer site visits and technical workshops.');
+  addExp('james@student.demo','Finance Intern','Meridian Bank (local)','2025-06-01','2025-08-31','Supported the equities desk with market research and financial models for client pitches.');
+  addExp('priya@student.demo','Data Analyst Intern','Salford City Council','2025-01-01','2025-04-30',"Built dashboards tracking local employment outcomes for the council's economic development team.");
+  addExp('liam@student.demo','Site Engineering Assistant','Manchester Infrastructure Ltd','2024-06-01','2024-09-01','Assisted site engineers on a transport infrastructure project, tracking supply chain schedules.');
+
+  function addRole(company,title,type,sector,location,remote,paid,description,sponsorsVisa,deadline,skillsArr){
+    var id=next('role');
+    st.roles.push({ id:id, company_id:companyId[company], title:title, type:type, sector:sector, location:location, remote:remote, paid:paid,
+      description:description, sponsors_visa:sponsorsVisa, deadline:deadline, status:'open', created_at: tick(300) });
+    roleId[title]=id;
+    skillsArr.forEach(function(pair){ st.roleSkills.push({ role_id:id, skill_id:skillId[pair[0]], weight:pair[1] }); });
+    return id;
+  }
+  addRole('NovaTech Systems','Software Engineering Graduate Programme','graduate','Technology','London',0,'£38,000',
+    "Join NovaTech's two-year graduate programme rotating across our commerce and fintech platform teams. You'll ship production code from week one, working alongside senior engineers on our React and Node.js stack, with structured mentoring and a clear path to a permanent engineering role.",
+    1,'2026-09-15',[['JavaScript','high'],['React','high'],['Node.js','medium'],['Git','medium'],['SQL','medium']]);
+  addRole('NovaTech Systems','Data Analytics Internship','internship','Technology','London',1,'£24,000 pro-rata',
+    "A ten-week summer internship embedded in NovaTech's analytics team, building dashboards and models that inform product decisions across our logistics and commerce platforms. Remote-friendly with optional London office days.",
+    0,'2026-08-20',[['Python','high'],['Data Analysis','high'],['SQL','medium'],['Excel','medium']]);
+  addRole('Meridian Consulting Group','Strategy Consulting Graduate Scheme','graduate','Consulting','London',0,'£42,000',
+    "A three-year graduate scheme rotating through Meridian's strategy, operations and digital transformation practices, working directly with Fortune 500 clients from day one. Structured training leads to consultant promotion within 18 months.",
+    1,'2026-09-01',[['Strategy Consulting','high'],['Market Research','high'],['Presentation Skills','medium'],['Communication','medium'],['Business Analysis','medium']]);
+  addRole('Meridian Consulting Group','Summer Placement — Consulting Analyst','placement','Consulting','New York',0,'$5,000/month',
+    "A ten-week placement in Meridian's New York office supporting live client engagements, from market sizing to stakeholder presentations. High performers are fast-tracked into the graduate scheme.",
+    0,'2026-08-10',[['Market Research','high'],['Excel','medium'],['Communication','medium'],['Problem Solving','medium']]);
+  addRole('Ashford Capital','Investment Banking Graduate Analyst','graduate','Finance','London',0,'£50,000',
+    "Join Ashford Capital's two-year graduate analyst programme across markets, banking and asset management. You'll build financial models, support live transactions and receive full CFA study support.",
+    1,'2026-09-10',[['Financial Modelling','high'],['Excel','high'],['Accounting','medium'],['Statistics','medium'],['Negotiation','medium']]);
+  addRole('Ashford Capital','Finance Summer Internship','internship','Finance','New York',0,'$6,000/month',
+    "A nine-week internship rotating through two of Ashford Capital's New York desks, culminating in a client-facing capstone presentation. A strong route into our graduate programme.",
+    0,'2026-08-25',[['Financial Modelling','high'],['Excel','medium'],['Communication','medium'],['Negotiation','medium']]);
+  addRole('Brunel Engineering Co','Graduate Mechanical Engineer','graduate','Engineering','Manchester',0,'£32,000',
+    'Design and deliver industrial engineering projects across renewable energy and transport infrastructure, working alongside chartered engineers with structured progression toward chartership.',
+    0,'2026-09-05',[['C++','medium'],['Project Management','medium'],['Problem Solving','high'],['Teamwork','medium'],['Critical Thinking','medium']]);
+  addRole('Brunel Engineering Co','Engineering Placement Year','placement','Engineering','Dubai',0,'£26,000 pro-rata',
+    "A twelve-month placement embedded in Brunel's Dubai infrastructure team, coordinating supply chains and project schedules on a major transport programme. Visa sponsorship and relocation support provided.",
+    1,'2026-08-30',[['Project Management','high'],['Supply Chain Management','medium'],['Communication','medium'],['Adaptability','medium']]);
+  addRole('Vitalis Health','Public Health Graduate Programme','graduate','Health','London',0,'£30,000',
+    "Work with Vitalis Health's public health consultancy team analysing population health data and advising NHS and government clients on policy interventions.",
+    0,'2026-09-20',[['Data Analysis','high'],['Statistics','high'],['Communication','medium'],['Stakeholder Management','medium']]);
+  addRole('Vitalis Health','Health Data Internship','internship','Health','Sydney',1,'AUD 4,500/month',
+    "A twelve-week remote-friendly internship building predictive models and visualisations for Vitalis Health's population health analytics platform, based out of our Sydney office.",
+    0,'2026-08-15',[['Data Analysis','medium'],['Python','medium'],['Machine Learning','medium'],['Data Visualization','medium']]);
+  addRole('Kaleidoscope Media','Media Graduate Scheme','graduate','Media','London',0,'£28,000',
+    "Join Kaleidoscope Media's graduate scheme creating campaigns for global consumer brands, rotating across creative, planning and client management teams.",
+    0,'2026-09-12',[['Marketing','high'],['Creativity','high'],['Communication','medium'],['Presentation Skills','medium']]);
+  addRole('Kaleidoscope Media','Marketing Placement','placement','Media','Los Angeles',1,'$3,500/month',
+    "A six-month placement supporting Kaleidoscope Media's marketing team on campaign research and content production for consumer brand clients, remote-friendly from anywhere.",
+    0,'2026-08-18',[['Marketing','high'],['Market Research','medium'],['Data Visualization','medium'],['Creativity','medium']]);
+
+  function notify(uid,type,message,link,read){ st.notifications.push({ id:next('notification'), user_id:uid, type:type, message:message, link:link||null, read: read?1:0, created_at: tick(6) }); }
+  function companyUserIds(company){ return st.users.filter(function(u){ return u.company_id===companyId[company]; }).map(function(u){ return u.id; }); }
+  function uniAdminIds(university){ return st.users.filter(function(u){ return u.role==='university_admin' && u.university_id===uniId[university]; }).map(function(u){ return u.id; }); }
+  function studentByEmail(email){ return studentsMeta.filter(function(s){ return s.email===email; })[0]; }
+  function companyOfRole(title){ var r = st.roles.filter(function(x){ return x.id===roleId[title]; })[0]; return st.companies.filter(function(c){ return c.id===r.company_id; })[0].name; }
+
+  function addApplication(roleTitle, studentEmail, note, statusChain){
+    var finalStatus = statusChain[statusChain.length-1];
+    var uid = userId[studentEmail], rId = roleId[roleTitle];
+    var appId = next('application');
+    var createdAt = tick(400);
+    st.applications.push({ id:appId, role_id:rId, student_user_id:uid, note: note||'', status: finalStatus, placement_approved:0, created_at:createdAt, updated_at:createdAt });
+    statusChain.forEach(function(stt){ st.applicationEvents.push({ id:next('applicationEvent'), application_id:appId, status:stt, created_at: tick(60) }); });
+    var company = companyOfRole(roleTitle), studentName = studentByEmail(studentEmail).name;
+    companyUserIds(company).forEach(function(empUid){ notify(empUid,'application', studentName+' applied for '+roleTitle, '/employer/roles', 0); });
+    if(finalStatus==='withdrawn'){
+      companyUserIds(company).forEach(function(empUid){ notify(empUid,'application', studentName+' withdrew their application for '+roleTitle, '/employer/roles', 0); });
+    } else if(finalStatus!=='applied'){
+      notify(uid,'application','Your application for '+roleTitle+' is now '+finalStatus,'/student/applications',0);
+      if(finalStatus==='offer'||finalStatus==='hired'){
+        var uni = studentByEmail(studentEmail).university;
+        uniAdminIds(uni).forEach(function(adminUid){ notify(adminUid,'placement', studentName+"'s application for "+roleTitle+' at '+company+' needs placement sign-off', '/university/placements', 0); });
+      }
+    }
+    return appId;
+  }
+  addApplication('Data Analytics Internship','priya@student.demo',"I'd love to bring my data analysis skills to NovaTech.",['applied']);
+  addApplication('Public Health Graduate Programme','priya@student.demo','',['applied','shortlisted']);
+  addApplication('Software Engineering Graduate Programme','tom@student.demo','Excited about the chance to work on your commerce platform.',['applied','shortlisted','interview']);
+  addApplication('Investment Banking Graduate Analyst','tom@student.demo','',['applied','shortlisted','rejected']);
+  addApplication('Strategy Consulting Graduate Scheme','aisha@student.demo','Strategy consulting has been my goal since my internship at Northgate Retail.',['applied','shortlisted','interview','offer']);
+  addApplication('Media Graduate Scheme','aisha@student.demo','',['applied']);
+  addApplication('Data Analytics Internship','wei@student.demo','',['applied','shortlisted']);
+  addApplication('Health Data Internship','wei@student.demo','I would welcome the chance to apply my analytics skills to public health.',['applied','shortlisted','interview','offer','hired']);
+  addApplication('Software Engineering Graduate Programme','emma@student.demo','',['applied','shortlisted']);
+  addApplication('Graduate Mechanical Engineer','emma@student.demo','Keen to bring my engineering society leadership experience to Brunel.',['applied']);
+  addApplication('Engineering Placement Year','liam@student.demo','',['applied','shortlisted','interview']);
+  addApplication('Summer Placement — Consulting Analyst','sofia@student.demo','',['applied','withdrawn']);
+  addApplication('Investment Banking Graduate Analyst','james@student.demo','My finance internship gave me strong modelling foundations for this role.',['applied','shortlisted','interview','offer']);
+  addApplication('Marketing Placement','grace@student.demo','',['applied']);
+  addApplication('Finance Summer Internship','noah@student.demo','',['applied','shortlisted','rejected']);
+
+  function addInvite(roleTitle, studentEmail){
+    st.roleInvites.push({ id: next('roleInvite'), role_id: roleId[roleTitle], student_user_id: userId[studentEmail], created_at: tick(50) });
+    var company = companyOfRole(roleTitle);
+    notify(userId[studentEmail],'invite', company+' invited you to apply for '+roleTitle, '/student/roles', 0);
+  }
+  addInvite('Software Engineering Graduate Programme','grace@student.demo');
+  addInvite('Public Health Graduate Programme','james@student.demo');
+
+  studentsMeta.forEach(function(s){
+    if(s.claimStatus==='pending'){
+      uniAdminIds(s.university).forEach(function(adminUid){ notify(adminUid,'verification', s.name+' requested verification for '+s.course, '/university/verifications', 0); });
+    } else {
+      notify(userId[s.email],'verification','Your enrolment at '+s.university+' has been verified','/student/profile',1);
+    }
+  });
+
+  function connect(aEmail,bEmail,status){
+    var a=userId[aEmail], b=userId[bEmail];
+    st.connections.push({ id: next('connection'), requester_id:a, addressee_id:b, status:status });
+    var aName=studentByEmail(aEmail).name, bName=studentByEmail(bEmail).name;
+    if(status==='pending') notify(b,'connection', aName+' wants to connect with you','/network',0);
+    else notify(a,'connection', bName+' accepted your connection request','/network',1);
+  }
+  connect('priya@student.demo','tom@student.demo','accepted');
+  connect('priya@student.demo','aisha@student.demo','accepted');
+  connect('tom@student.demo','emma@student.demo','accepted');
+  connect('aisha@student.demo','liam@student.demo','accepted');
+  connect('wei@student.demo','james@student.demo','accepted');
+  connect('emma@student.demo','grace@student.demo','accepted');
+  connect('sofia@student.demo','noah@student.demo','accepted');
+  connect('james@student.demo','ben@student.demo','accepted');
+  connect('grace@student.demo','tom@student.demo','pending');
+  connect('noah@student.demo','priya@student.demo','pending');
+  connect('fatima@student.demo','aisha@student.demo','pending');
+
+  function follow(studentEmail, orgType, orgName){
+    var orgId = orgType==='company' ? companyId[orgName] : uniId[orgName];
+    st.follows.push({ user_id:userId[studentEmail], org_type:orgType, org_id:orgId });
+  }
+  follow('priya@student.demo','company','NovaTech Systems'); follow('priya@student.demo','university','University of Salford'); follow('priya@student.demo','company','Vitalis Health');
+  follow('tom@student.demo','company','NovaTech Systems'); follow('tom@student.demo','university','Imperial College London');
+  follow('aisha@student.demo','company','Meridian Consulting Group'); follow('aisha@student.demo','university','University of Manchester');
+  follow('wei@student.demo','company','Vitalis Health'); follow('wei@student.demo','university','Monash University');
+  follow('emma@student.demo','company','NovaTech Systems'); follow('emma@student.demo','company','Brunel Engineering Co');
+  follow('liam@student.demo','company','Brunel Engineering Co'); follow('liam@student.demo','university','University of Manchester');
+  follow('sofia@student.demo','company','Meridian Consulting Group'); follow('sofia@student.demo','university','University of Salford');
+  follow('james@student.demo','company','Ashford Capital'); follow('james@student.demo','university','Monash University');
+  follow('grace@student.demo','company','Kaleidoscope Media'); follow('grace@student.demo','university','Imperial College London');
+  follow('noah@student.demo','company','Ashford Capital'); follow('noah@student.demo','university','University of Manchester');
+  follow('fatima@student.demo','company','Vitalis Health'); follow('fatima@student.demo','university','University of Salford');
+  follow('ben@student.demo','company','Kaleidoscope Media'); follow('ben@student.demo','university','Monash University');
+
+  function orgPost(authorEmail, orgType, orgName, body){
+    var orgId = orgType==='company'?companyId[orgName]:uniId[orgName];
+    var id = next('post');
+    st.posts.push({ id:id, author_user_id:userId[authorEmail], org_type:orgType, org_id:orgId, body:body, created_at: tick(180) });
+    return id;
+  }
+  function studentPost(authorEmail, body){ var id=next('post'); st.posts.push({ id:id, author_user_id:userId[authorEmail], org_type:null, org_id:null, body:body, created_at: tick(180) }); return id; }
+  function like(postId){ for(var i=1;i<arguments.length;i++) st.postLikes.push({ post_id:postId, user_id:userId[arguments[i]] }); }
+  function comment(postId, authorEmail, body){ st.postComments.push({ id: next('comment'), post_id:postId, user_id:userId[authorEmail], body:body, created_at: tick(20) }); }
+
+  var p;
+  p = orgPost('recruiter@novatech.demo','company','NovaTech Systems', "We're excited to launch our 2027 Software Engineering Graduate Programme — two years, three rotations, one clear path to a senior role. Applications close 15 September!");
+  like(p,'tom@student.demo','emma@student.demo','grace@student.demo');
+  comment(p,'tom@student.demo','Just applied — really looking forward to this!');
+
+  p = orgPost('careers@imperial.demo','university','Imperial College London','Congratulations to our Class of 2026 — 93% of graduates are in employment or further study within six months. Proud of what our students achieve.');
+  like(p,'tom@student.demo','emma@student.demo');
+
+  p = orgPost('recruiter@meridian.demo','company','Meridian Consulting Group','Applications for our Strategy Consulting Graduate Scheme close 1 September. Come work with us on live Fortune 500 engagements from day one.');
+  like(p,'aisha@student.demo');
+  comment(p,'aisha@student.demo','Just submitted my application, fingers crossed!');
+
+  p = studentPost('priya@student.demo','Just started my internship search — excited to explore data roles across tech and health. Any tips on breaking into health analytics welcome!');
+  like(p,'wei@student.demo','aisha@student.demo');
+  comment(p,'wei@student.demo',"Good luck Priya — Vitalis Health's internship looks like a great fit for you.");
+
+  p = orgPost('careers@manchester.demo','university','University of Manchester','Join our Employability Fair next month — meet 40+ employers on campus across technology, finance, engineering and consulting.');
+  like(p,'aisha@student.demo','liam@student.demo','noah@student.demo');
+
+  p = orgPost('recruiter@ashfordcapital.demo','company','Ashford Capital','Ashford Capital has been named a top graduate employer for Finance in 2026. Our graduate analyst applications are open now — full CFA study support included.');
+  like(p,'james@student.demo','noah@student.demo');
+
+  p = studentPost('tom@student.demo',"Great to connect with so many fellow engineers at the NovaTech open day — the platform engineering team's work on their commerce stack is seriously impressive.");
+  like(p,'priya@student.demo','emma@student.demo');
+  comment(p,'emma@student.demo',"Wish I could have made it — let's catch up about it!");
+
+  p = orgPost('careers@salford.demo','university','University of Salford','Salford students: verification requests are now processed within 48 hours. Get your profile verified to unlock the full employer network.');
+  like(p,'priya@student.demo','sofia@student.demo','fatima@student.demo');
+
+  p = studentPost('wei@student.demo','Thrilled to accept an offer as a Health Data Intern with Vitalis Health! Grateful to everyone who supported my applications this year.');
+  like(p,'james@student.demo','priya@student.demo','aisha@student.demo');
+  comment(p,'james@student.demo','Amazing news Wei, well deserved!');
+
+  p = orgPost('recruiter@kaleidoscopemedia.demo','company','Kaleidoscope Media', "We're hiring creative placement students for our Marketing team this summer — bring your storytelling skills and campaign ideas. Apply now.");
+  like(p,'sofia@student.demo','grace@student.demo');
+  comment(p,'sofia@student.demo','Just applied to the placement, love your recent campaign work!');
+
+  function addEvent(orgType, orgName, creatorEmail, title, description, date, format, location, capacity){
+    var orgId = orgType==='company'?companyId[orgName]:uniId[orgName];
+    var id = next('event');
+    st.events.push({ id:id, org_type:orgType, org_id:orgId, created_by_user_id:userId[creatorEmail], title:title, description:description, date:date, format:format, location:location||null, capacity:capacity||null });
+    return id;
+  }
+  function register(eventId){ for(var i=1;i<arguments.length;i++) st.eventRegistrations.push({ event_id:eventId, user_id:userId[arguments[i]] }); }
+
+  var evOpenDay = addEvent('company','NovaTech Systems','recruiter@novatech.demo','Tech Careers Open Day','An evening of lightning talks and Q&A with NovaTech engineers, covering our graduate programme and internship pathways.','2026-08-05T17:30:00Z','virtual',null,100);
+  register(evOpenDay,'tom@student.demo','emma@student.demo','grace@student.demo');
+  var evConsulting = addEvent('company','Meridian Consulting Group','recruiter@meridian.demo','Consulting Insight Evening','Meet Meridian consultants and alumni for an evening of case-study workshops and networking.','2026-08-12T18:00:00Z','in_person','Meridian HQ, London',50);
+  register(evConsulting,'aisha@student.demo','sofia@student.demo');
+  var evFair = addEvent('university','Imperial College London','careers@imperial.demo','Graduate Recruitment Fair',"Imperial's flagship recruitment fair, with 60+ employers across technology, finance, engineering and consulting.",'2026-09-03T10:00:00Z','in_person','Imperial College London, South Kensington Campus',500);
+  register(evFair,'tom@student.demo','emma@student.demo','grace@student.demo','priya@student.demo');
+  var evWorkshop = addEvent('university','University of Manchester','careers@manchester.demo','Employability Skills Workshop',"A practical workshop on CV-free applications, interview technique and using QS Connect's profile-strength tools.",'2026-08-20T13:00:00Z','virtual',null,200);
+  register(evWorkshop,'aisha@student.demo','liam@student.demo','noah@student.demo');
+
+  notify(userId['tom@student.demo'],'event',"You're registered for Tech Careers Open Day",'/events',1);
+  notify(userId['emma@student.demo'],'event',"You're registered for Tech Careers Open Day",'/events',1);
+  notify(userId['grace@student.demo'],'event',"You're registered for Tech Careers Open Day",'/events',1);
+  notify(userId['priya@student.demo'],'event',"You're registered for Graduate Recruitment Fair",'/events',1);
+
+  function addThread(emailA, emailB, msgs){
+    var a=userId[emailA], b=userId[emailB];
+    var id = next('thread');
+    st.threads.push({ id:id, a_user_id:a, b_user_id:b });
+    msgs.forEach(function(m, idx){
+      var senderId = userId[m.from];
+      var isLast = idx===msgs.length-1;
+      st.messages.push({ id: next('message'), thread_id:id, sender_id:senderId, body:m.body, read: isLast?0:1, created_at: tick(30) });
+    });
+    var last = msgs[msgs.length-1];
+    var recipientEmail = last.from===emailA ? emailB : emailA;
+    var fromMeta = studentByEmail(last.from);
+    var fromName = fromMeta ? fromMeta.name : last.fromName;
+    notify(userId[recipientEmail],'message','New message from '+fromName,'/messages',0);
+    return id;
+  }
+  addThread('tom@student.demo','priya@student.demo', [
+    { from:'tom@student.demo', body:"Hey Priya, great to connect! How's the internship search going?" },
+    { from:'priya@student.demo', body:'Hi Tom! Going well, just applied to a couple of data roles. How about you?' },
+    { from:'tom@student.demo', body:"Just got moved to interview stage for NovaTech's grad scheme, fingers crossed!" }
+  ]);
+  addThread('recruiter@novatech.demo','tom@student.demo', [
+    { from:'recruiter@novatech.demo', fromName:'Marcus Reid', body:"Hi Tom, thanks for applying to our Software Engineering Graduate Programme — we'd like to invite you to interview next week." },
+    { from:'tom@student.demo', body:"That's great news, thank you! I'm available any day next week." }
+  ]);
+  addThread('careers@salford.demo','priya@student.demo', [
+    { from:'careers@salford.demo', fromName:'Dr. Rachel Osborne', body:'Hi Priya, just confirming your MSc Data Science enrolment has been verified on QS Connect.' },
+    { from:'priya@student.demo', body:'Thank you so much, appreciate the quick turnaround!' }
+  ]);
+
+  return st;
+}
+
+/* =========================================================================
+   MATCH SCORE (ported from server/match.js)
+   ========================================================================= */
+function toList(v){ if(Array.isArray(v)) return v; if(v==null) return []; if(typeof v==='string') return v.split(',').map(function(s){return s.trim();}).filter(Boolean); return []; }
+function toSet(v){ if(v instanceof Set) return v; return new Set(toList(v)); }
+function truthy(v){ return v===true || v===1 || v==='1'; }
+function matchScore(student, role){
+  var studentSkillIds = toSet(student.skill_ids);
+  var requiredSkills = Array.isArray(role.required_skills) ? role.required_skills : [];
+  var overlap=[], gaps=[], earned=0, max=0;
+  requiredSkills.forEach(function(rs){
+    var pts = rs.weight==='high' ? 3 : 2;
+    max += pts;
+    if(studentSkillIds.has(rs.id) || studentSkillIds.has(String(rs.id))){ earned+=pts; overlap.push(rs.name); }
+    else gaps.push(rs.name);
+  });
+  max += 2;
+  var interests = toList(student.interests_sectors).map(function(s){ return s.toLowerCase(); });
+  if(role.sector && interests.indexOf(String(role.sector).toLowerCase())!==-1) earned += 2;
+  max += 1;
+  var preferredLocations = toList(student.preferred_locations).map(function(s){ return s.toLowerCase(); });
+  var roleLocation = role.location ? String(role.location).toLowerCase() : '';
+  var locationMatch = truthy(role.remote) || truthy(student.open_to_relocate) || (roleLocation && preferredLocations.indexOf(roleLocation)!==-1);
+  if(locationMatch) earned += 1;
+  var workRightsOk = truthy(role.sponsors_visa) || truthy(student.work_rights);
+  if(!workRightsOk) earned -= 3;
+  var score;
+  if(max<=0) score=0; else score = Math.round((earned/max)*100);
+  score = Math.max(0, Math.min(100, score));
+  return { score:score, overlap:overlap, gaps:gaps };
+}
+
+/* =========================================================================
+   QUERY HELPERS (mimic the server's lib/helpers.js + route shapes)
+   ========================================================================= */
+function byId(arr,id){ id=Number(id); for(var i=0;i<arr.length;i++){ if(arr[i].id===id) return arr[i]; } return null; }
+function uniById(id){ return byId(state.universities, id); }
+function companyById(id){ return byId(state.companies, id); }
+function skillById(id){ return byId(state.skills, id); }
+function roleById(id){ return byId(state.roles, id); }
+function userById(id){ return byId(state.users, id); }
+function userByEmail(email){ return state.users.filter(function(u){ return u.email===email; })[0] || null; }
+function studentProfile(uid){ uid=Number(uid); return state.studentProfiles.filter(function(p){ return p.user_id===uid; })[0] || null; }
+function studentSkillIds(uid){ uid=Number(uid); return state.studentSkills.filter(function(s){ return s.student_user_id===uid; }).map(function(s){ return s.skill_id; }); }
+function studentSkillObjs(uid){ return studentSkillIds(uid).map(function(id){ return skillById(id); }).filter(Boolean); }
+function requiredSkillsForRole(roleId){ return state.roleSkills.filter(function(rs){ return rs.role_id===Number(roleId); }).map(function(rs){ var sk=skillById(rs.skill_id); return { id: rs.skill_id, name: sk?sk.name:'', weight: rs.weight }; }); }
+function matchForStudent(studentUserId, roleRow){
+  var profile = studentProfile(studentUserId) || {};
+  var student = { skill_ids: studentSkillIds(studentUserId), interests_sectors: profile.interests_sectors||'', preferred_locations: profile.preferred_locations||'', work_rights: profile.work_rights||0, open_to_relocate: profile.open_to_relocate||0 };
+  var role = { sector: roleRow.sector, location: roleRow.location, remote: roleRow.remote, sponsors_visa: roleRow.sponsors_visa, required_skills: requiredSkillsForRole(roleRow.id) };
+  return matchScore(student, role);
+}
+function computeProfileStrength(profile, skillCount, experienceCount, hasApprovedClaim){
+  var score=0;
+  if(profile.headline && profile.headline.trim()) score+=20;
+  if(profile.about && profile.about.trim()) score+=15;
+  if(skillCount>=3) score+=20;
+  if(experienceCount>=1) score+=15;
+  if(hasApprovedClaim) score+=15;
+  if(profile.interests_sectors && profile.interests_sectors.trim()) score+=15;
+  return Math.max(0, Math.min(100, score));
+}
+function unreadNotifCount(uid){ uid=Number(uid); return state.notifications.filter(function(n){ return n.user_id===uid && !n.read; }).length; }
+function unreadMsgCount(uid){
+  uid=Number(uid);
+  var myThreadIds = state.threads.filter(function(t){ return t.a_user_id===uid||t.b_user_id===uid; }).map(function(t){ return t.id; });
+  return state.messages.filter(function(m){ return myThreadIds.indexOf(m.thread_id)!==-1 && !m.read && m.sender_id!==uid; }).length;
+}
+function connectionRowBetween(aId,bId){
+  aId=Number(aId); bId=Number(bId);
+  return state.connections.filter(function(c){ return (c.requester_id===aId&&c.addressee_id===bId)||(c.requester_id===bId&&c.addressee_id===aId); })[0] || null;
+}
+function connectionState(meId, otherId){
+  var row = connectionRowBetween(meId, otherId);
+  if(!row) return 'none';
+  if(row.status==='accepted') return 'connected';
+  if(row.status==='declined') return 'none';
+  return row.requester_id===Number(meId) ? 'pending_out' : 'pending_in';
+}
+function canMessage(aUserId,bUserId){
+  aUserId=Number(aUserId); bUserId=Number(bUserId);
+  if(aUserId===bUserId) return false;
+  var a=userById(aUserId), b=userById(bUserId);
+  if(!a||!b) return false;
+  var row = state.connections.filter(function(c){ return c.status==='accepted' && ((c.requester_id===aUserId&&c.addressee_id===bUserId)||(c.requester_id===bUserId&&c.addressee_id===aUserId)); })[0];
+  if(row) return true;
+  function employerStudentPair(employer, student){
+    if(employer.role!=='employer'||student.role!=='student') return false;
+    var hasApp = state.applications.some(function(ap){ if(ap.student_user_id!==student.id) return false; var r=roleById(ap.role_id); return r && r.company_id===employer.company_id; });
+    if(hasApp) return true;
+    var hasInvite = state.roleInvites.some(function(ri){ if(ri.student_user_id!==student.id) return false; var r=roleById(ri.role_id); return r && r.company_id===employer.company_id; });
+    return hasInvite;
+  }
+  if(employerStudentPair(a,b)||employerStudentPair(b,a)) return true;
+  function uniAdminStudentPair(admin, student){
+    if(admin.role!=='university_admin'||student.role!=='student') return false;
+    return admin.university_id!=null && admin.university_id===student.university_id;
+  }
+  if(uniAdminStudentPair(a,b)||uniAdminStudentPair(b,a)) return true;
+  return false;
+}
+function companyFollowers(companyId){ return state.follows.filter(function(f){ return f.org_type==='company'&&f.org_id===Number(companyId); }).length; }
+function uniFollowers(uniId){ return state.follows.filter(function(f){ return f.org_type==='university'&&f.org_id===Number(uniId); }).length; }
+function isFollowing(userId, orgType, orgId){ userId=Number(userId); orgId=Number(orgId); return state.follows.some(function(f){ return f.user_id===userId && f.org_type===orgType && f.org_id===orgId; }); }
+function nextSeq(key){ state.seq[key] = (state.seq[key]||0)+1; return state.seq[key]; }
+function notify(uid,type,message,link){ state.notifications.push({ id: nextSeq('notification'), user_id:uid, type:type, message:message, link: link||null, read:0, created_at: new Date().toISOString() }); }
+
+/* =========================================================================
+   PERSISTENCE
+   ========================================================================= */
+var LS_STATE = 'qsconnect_state_v1', LS_SESSION = 'qsconnect_session_v1';
+function saveState(){ try { localStorage.setItem(LS_STATE, JSON.stringify(state)); } catch(e){} }
+function saveSession(){ try { localStorage.setItem(LS_SESSION, JSON.stringify(session)); } catch(e){} }
+function loadState(){
+  try {
+    var raw = localStorage.getItem(LS_STATE);
+    if(raw){ state = JSON.parse(raw); return; }
+  } catch(e){}
+  buildSeed(); saveState();
+}
+function loadSession(){
+  try {
+    var raw = localStorage.getItem(LS_SESSION);
+    if(raw){ session = JSON.parse(raw); return; }
+  } catch(e){}
+  session = { userId:null };
+}
+function currentUser(){ return session && session.userId ? userById(session.userId) : null; }
+function resetDemo(){
+  buildSeed();
+  saveState();
+  session = { userId:null };
+  saveSession();
+  location.hash = '#/';
+  renderApp();
+  showToast('Demo data reset');
+}
+
+/* =========================================================================
+   TOAST / MODAL / DROPDOWN
+   ========================================================================= */
+function showToast(msg, type){
+  var host = document.getElementById('toastHost');
+  var el = document.createElement('div');
+  el.className = 'toast ' + (type==='error' ? 'toast-error' : 'toast-success');
+  el.textContent = msg;
+  el.addEventListener('click', function(){ el.remove(); });
+  host.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 3800);
+}
+function openModal(title, bodyHtml, footerHtml){
+  var host = document.getElementById('modalHost');
+  host.innerHTML = '<div class="modal-overlay" id="modalOverlay"><div class="modal" role="dialog" aria-modal="true" aria-label="'+esc(title)+'">'
+    + '<div class="modal-head"><h3>'+esc(title)+'</h3><button type="button" class="modal-close" onclick="App.closeModal()" aria-label="Close">'+ICONS.close+'</button></div>'
+    + '<div class="modal-body">'+bodyHtml+'</div>'
+    + (footerHtml ? '<div class="modal-footer">'+footerHtml+'</div>' : '')
+    + '</div></div>';
+  var overlay = document.getElementById('modalOverlay');
+  overlay.addEventListener('mousedown', function(e){ if(e.target===overlay) closeModal(); });
+}
+function closeModal(){ document.getElementById('modalHost').innerHTML=''; }
+function toggleDropdown(id, ev){
+  if(ev) ev.stopPropagation();
+  var target = document.getElementById(id);
+  var wasHidden = target.classList.contains('hidden');
+  document.querySelectorAll('.dropdown').forEach(function(d){ d.classList.add('hidden'); });
+  if(wasHidden) target.classList.remove('hidden');
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest || !e.target.closest('.shell-menu')){
+    document.querySelectorAll('.dropdown').forEach(function(d){ d.classList.add('hidden'); });
+  }
+});
+
+/* =========================================================================
+   ROUTER
+   ========================================================================= */
+function currentSegs(){
+  var h = location.hash || '#/';
+  h = h.slice(1);
+  if(h.indexOf('/')!==0) h = '/'+h;
+  var qIdx = h.indexOf('?');
+  if(qIdx!==-1) h = h.slice(0, qIdx);
+  return h.split('/').filter(Boolean);
+}
+function roleHome(role){ if(role==='student') return '/student'; if(role==='employer') return '/employer'; return '/university'; }
+function goto(hash){ if(location.hash===hash){ renderApp(); } else { location.hash = hash; } }
+function myProfileLink(user){
+  if(user.role==='student') return '#/student/profile';
+  if(user.role==='employer') return user.company_id ? '#/company-page/'+user.company_id : '#/employer';
+  return user.university_id ? '#/university-page/'+user.university_id : '#/university';
+}
+
+function renderApp(){
+  var user = currentUser();
+  var segs = currentSegs();
+  var root = document.getElementById('root');
+
+  if(segs.length===0){
+    if(user){ location.hash = '#'+roleHome(user.role); return; }
+    document.documentElement.removeAttribute('data-portal');
+    root.innerHTML = pageLanding();
+    return;
+  }
+  if(segs[0]==='login'){
+    if(user){ location.hash = '#'+roleHome(user.role); return; }
+    var portal = segs[1]==='employer'||segs[1]==='university' ? segs[1] : 'student';
+    document.documentElement.setAttribute('data-portal', portal);
+    root.innerHTML = pageLoginPortal(portal);
+    return;
+  }
+  if(!user){ location.hash = '#/'; return; }
+
+  document.documentElement.setAttribute('data-portal', user.role==='student'?'student':user.role==='employer'?'employer':'university');
+
+  var path = '/'+segs.join('/');
+  var inner = '';
+
+  if(path==='/feed') inner = pageFeed(user);
+  else if(path==='/network') inner = pageNetwork(user);
+  else if(segs[0]==='messages') inner = pageMessages(user, segs[1]?Number(segs[1]):null);
+  else if(path==='/events') inner = pageEventsShared(user);
+  else if(segs[0]==='company-page' && segs[1]) inner = pageCompanyPage(user, Number(segs[1]));
+  else if(segs[0]==='university-page' && segs[1]) inner = pageUniversityPage(user, Number(segs[1]));
+  else if(segs[0]==='profile' && segs[1]) inner = pageStudentProfileView(user, Number(segs[1]));
+  else if(user.role==='student'){
+    if(path==='/student') inner = pageStudentDashboard(user);
+    else if(path==='/student/roles') inner = pageStudentBrowseRoles(user);
+    else if(segs[0]==='student'&&segs[1]==='roles'&&segs[2]) inner = pageStudentRoleDetail(user, Number(segs[2]));
+    else if(path==='/student/applications') inner = pageStudentApplications(user);
+    else if(path==='/student/profile') inner = pageStudentEditProfile(user);
+    else { location.hash='#/student'; return; }
+  } else if(user.role==='employer'){
+    if(path==='/employer') inner = pageEmployerDashboard(user);
+    else if(path==='/employer/roles') inner = pageEmployerRoles(user);
+    else if(path==='/employer/roles/new') inner = pageEmployerRoleForm(user);
+    else if(segs[0]==='employer'&&segs[1]==='roles'&&segs[2]) inner = pageEmployerRoleManage(user, Number(segs[2]));
+    else if(path==='/employer/events') inner = pageOrgEvents(user);
+    else { location.hash='#/employer'; return; }
+  } else {
+    if(path==='/university') inner = pageUniversityDashboard(user);
+    else if(path==='/university/verifications') inner = pageUniversityVerifications(user);
+    else if(path==='/university/cohort') inner = pageUniversityCohort(user);
+    else if(path==='/university/placements') inner = pageUniversityPlacements(user);
+    else if(path==='/university/engagement') inner = pageUniversityEngagement(user);
+    else if(path==='/university/events') inner = pageOrgEvents(user);
+    else { location.hash='#/university'; return; }
+  }
+
+  root.innerHTML = renderShell(user, inner);
+  afterRender();
+}
+
+function afterRender(){
+  var mb = document.getElementById('messagesPaneBody');
+  if(mb) mb.scrollTop = mb.scrollHeight;
+}
+
+/* =========================================================================
+   SHELL (topbar + sidebar)
+   ========================================================================= */
+function navItemsFor(user){
+  if(user.role==='student'){
+    return [
+      {to:'#/feed', label:'Feed', icon:ICONS.feed},
+      {to:'#/student', label:'Dashboard', icon:ICONS.home, end:true},
+      {to:'#/student/roles', label:'Browse roles', icon:ICONS.roles},
+      {to:'#/student/applications', label:'Applications', icon:ICONS.applications},
+      {to:'#/network', label:'Network', icon:ICONS.network},
+      {to:'#/messages', label:'Messages', icon:ICONS.messages},
+      {to:'#/events', label:'Events', icon:ICONS.events},
+      {to:'#/student/profile', label:'My profile', icon:ICONS.profile}
+    ];
+  }
+  if(user.role==='employer'){
+    var items = [
+      {to:'#/feed', label:'Feed', icon:ICONS.feed},
+      {to:'#/employer', label:'Dashboard', icon:ICONS.home, end:true},
+      {to:'#/employer/roles', label:'Roles', icon:ICONS.roles},
+      {to:'#/messages', label:'Messages', icon:ICONS.messages},
+      {to:'#/events', label:'Events', icon:ICONS.events}
+    ];
+    if(user.company_id) items.push({to:'#/company-page/'+user.company_id, label:'Company page', icon:ICONS.profile});
+    return items;
+  }
+  var uItems = [
+    {to:'#/feed', label:'Feed', icon:ICONS.feed},
+    {to:'#/university', label:'Dashboard', icon:ICONS.home, end:true},
+    {to:'#/university/verifications', label:'Verifications', icon:ICONS.verify},
+    {to:'#/university/cohort', label:'Cohort', icon:ICONS.cohort},
+    {to:'#/university/placements', label:'Placements', icon:ICONS.placements},
+    {to:'#/university/engagement', label:'Engagement', icon:ICONS.engagement},
+    {to:'#/university/events', label:'Events', icon:ICONS.events},
+    {to:'#/messages', label:'Messages', icon:ICONS.messages}
+  ];
+  if(user.university_id) uItems.push({to:'#/university-page/'+user.university_id, label:'University page', icon:ICONS.profile});
+  return uItems;
+}
+function renderShell(user, inner){
+  var cur = '#'+currentSegs().join('/');
+  if(currentSegs().length===0) cur = '#/';
+  var curHash = location.hash || '#/';
+  var notifs = state.notifications.filter(function(n){ return n.user_id===user.id; }).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); });
+  var unreadN = notifs.filter(function(n){ return !n.read; }).length;
+  var unreadM = unreadMsgCount(user.id);
+  var homeHash = '#'+roleHome(user.role);
+  var navHtml = navItemsFor(user).map(function(item){
+    var active = item.end ? (curHash===item.to) : (curHash.indexOf(item.to)===0);
+    return '<a href="'+item.to+'" class="shell-nav-link '+(active?'active':'')+'">'+item.icon+'<span class="nav-label">'+esc(item.label)+'</span></a>';
+  }).join('');
+  var notifListHtml = notifs.length===0
+    ? '<div class="muted small dropdown-empty">You\'re all caught up.</div>'
+    : notifs.slice(0,25).map(function(n){ return '<button type="button" class="dropdown-item '+(!n.read?'unread':'')+'" onclick="App.openNotif('+n.id+')"><div>'+esc(n.message)+'</div><div class="small muted">'+fmtDate(n.created_at)+'</div></button>'; }).join('');
+  return ''
+    + '<div class="shell">'
+    + '<header class="shell-topbar">'
+    + '<a href="'+homeHash+'" class="brand"><span class="brand-mark">Q</span><span class="brand-word">QS Connect</span></a>'
+    + '<div class="shell-topbar-actions">'
+    + '<a href="#/messages" class="icon-btn" aria-label="Messages">'+ICONS.messages+(unreadM>0?'<span class="unread-count">'+unreadM+'</span>':'')+'</a>'
+    + '<div class="shell-menu">'
+    + '<button type="button" class="icon-btn" onclick="App.toggleDropdown(\'notifDropdown\', event)" aria-label="Notifications">'+ICONS.bell+(unreadN>0?'<span class="unread-dot"></span>':'')+'</button>'
+    + '<div id="notifDropdown" class="dropdown dropdown-wide hidden">'
+    + '<div class="dropdown-head"><span>Notifications</span><button type="button" class="btn-link" onclick="App.markAllNotifsRead()">Mark all read</button></div>'
+    + '<div class="dropdown-list">'+notifListHtml+'</div>'
+    + '</div></div>'
+    + '<div class="shell-menu">'
+    + '<button type="button" class="avatar-btn" onclick="App.toggleDropdown(\'avatarDropdown\', event)">'+Avatar(user.name,34)+ICONS.chevron+'</button>'
+    + '<div id="avatarDropdown" class="dropdown hidden">'
+    + '<div class="dropdown-head"><div><div class="dropdown-user-name">'+esc(user.name)+'</div><div class="small muted">'+esc(user.email)+'</div></div></div>'
+    + '<div class="dropdown-list">'
+    + '<button type="button" class="dropdown-item" onclick="App.goto(\''+myProfileLink(user)+'\')">My profile</button>'
+    + '<button type="button" class="dropdown-item" onclick="App.confirmResetDemo()">Reset demo data</button>'
+    + '<button type="button" class="dropdown-item" onclick="App.signOut()">Sign out</button>'
+    + '</div></div></div>'
+    + '</div></header>'
+    + '<div class="shell-body"><nav class="shell-sidebar">'+navHtml+'</nav><main class="shell-main">'+inner+'</main></div>'
+    + '</div>';
+}
+
+/* =========================================================================
+   PUBLIC PAGES: Landing / Login
+   ========================================================================= */
+var PORTALS = [
+  { id:'student', label:'Students', color:'#2563eb', blurb:'Build a verified profile, get matched to roles by skill fit, and track every application in one place.', cta:'Find opportunities' },
+  { id:'employer', label:'Employers', color:'#0d9488', blurb:'Reach a ranked, verified talent pool — post roles, see match scores, and run your pipeline end to end.', cta:'Hire talent' },
+  { id:'university', label:'Universities', color:'#d97706', blurb:'Verify your students, prove graduate outcomes, and see which employers are engaging your cohort.', cta:'Manage your institution' }
+];
+var DIFFERENTIATORS = [
+  { title:'University-verified profiles', text:'Every claim of enrolment is confirmed by the institution — no CV fraud, just verified identity.' },
+  { title:'QS data, built in', text:'World rankings, Employer Reputation and Employment Outcomes sit right on every institution profile.' },
+  { title:'Transparent skills matching', text:'One shared skills graph scores students against roles — and shows exactly which gaps to close.' }
+];
+function pageLanding(){
+  return '<div class="landing">'
+    + '<header class="landing-nav"><div class="brand"><span class="brand-mark">Q</span><span class="brand-word">QS Connect</span></div>'
+    + '<a href="#/login/student" class="btn btn-ghost btn-sm">Sign in</a></header>'
+    + '<section class="landing-hero"><h1>The global network where university-verified talent meets the world&rsquo;s employers.</h1>'
+    + '<p class="landing-hero-sub">Powered by QS data — rankings, Employer Reputation and Employment Outcomes — QS Connect is the one place students, universities and employers meet to build early careers that work.</p></section>'
+    + '<section class="landing-portals grid-3">'
+    + PORTALS.map(function(p){ return '<button type="button" class="portal-card" style="--portal-color:'+p.color+'" onclick="App.goto(\'#/login/'+p.id+'\')"><div class="portal-card-label">'+p.label+'</div><p class="portal-card-blurb">'+p.blurb+'</p><span class="portal-card-cta">'+p.cta+' &rarr;</span></button>'; }).join('')
+    + '</section>'
+    + '<section class="landing-diff">'
+    + DIFFERENTIATORS.map(function(d){ return '<div class="landing-diff-item"><h3>'+d.title+'</h3><p class="muted">'+d.text+'</p></div>'; }).join('')
+    + '</section>'
+    + '<section class="landing-demo">'
+    + '<div class="demo-panel"><div class="demo-panel-row"><strong>Student</strong> priya@student.demo</div>'
+    + '<div class="demo-panel-row"><strong>Employer</strong> recruiter@novatech.demo</div>'
+    + '<div class="demo-panel-row"><strong>University</strong> careers@imperial.demo</div>'
+    + '<div class="demo-panel-row muted small">Click a portal above, then click any demo account to sign in instantly — no password needed.</div></div>'
+    + '</section>'
+    + '<footer class="landing-footer muted small">QS Connect — prototype build, July 2026.</footer>'
+    + '</div>';
+}
+
+var PORTAL_META = {
+  student: { label:'Students', color:'#2563eb', headline:'Pick up where your career starts.', sub:'Match to roles by skill fit, track applications, and let your university verify your identity.', role:'student' },
+  employer: { label:'Employers', color:'#0d9488', headline:'Hire from a verified, ranked talent pool.', sub:'Post roles, see match scores against your requirements, and manage your pipeline.', role:'employer' },
+  university: { label:'Universities', color:'#d97706', headline:'Prove your graduate outcomes.', sub:'Verify your cohort, track placements, and see which employers are engaging your students.', role:'university_admin' }
+};
+function pageLoginPortal(portal){
+  var meta = PORTAL_META[portal] || PORTAL_META.student;
+  var accounts = state.users.filter(function(u){ return u.role===meta.role; });
+  var rows = accounts.map(function(u){
+    var sub = u.email;
+    if(u.role==='student'){ var uni = uniById(u.university_id); sub = u.email + (uni?' · '+uni.name:''); }
+    else if(u.role==='employer'){ var co = companyById(u.company_id); sub = u.email + (co?' · '+co.name:''); }
+    else { var un = uniById(u.university_id); sub = u.email + (un?' · '+un.name:''); }
+    return '<button type="button" class="demo-account-row" onclick="App.signIn('+u.id+')">'+Avatar(u.name,38)
+      + '<span class="demo-account-row-body"><span class="demo-account-row-name">'+esc(u.name)+'</span><br><span class="demo-account-row-email">'+esc(sub)+'</span></span>'
+      + '<span class="muted">'+ICONS.chevron+'</span></button>';
+  }).join('');
+  return '<div class="auth-page" style="--portal-color:'+meta.color+'"><div class="auth-panel">'
+    + '<a href="#/" class="brand"><span class="brand-mark">Q</span><span class="brand-word">QS Connect</span></a>'
+    + '<div class="auth-portal-tag">'+meta.label+' portal</div>'
+    + '<h1>'+meta.headline+'</h1><p class="muted">'+meta.sub+'</p>'
+    + '<p class="small muted" style="margin-top:14px;">This is a click-through prototype — choose any demo account below to sign in instantly. No password required.</p>'
+    + '<div class="demo-account-list">'+rows+'</div>'
+    + '<div class="auth-panel-footer"><p class="small muted">Not '+meta.label.toLowerCase()+'? <a href="#/">Choose a different portal</a></p></div>'
+    + '</div></div>';
+}
+
+/* =========================================================================
+   SHARED: Posts
+   ========================================================================= */
+function postAuthorInfo(post){
+  var author = userById(post.author_user_id);
+  var orgName = null, orgType = null;
+  if(post.org_type==='company'){ var c = companyById(post.org_id); orgName = c?c.name:null; orgType='company'; }
+  else if(post.org_type==='university'){ var u = uniById(post.org_id); orgName = u?u.name:null; orgType='university'; }
+  var displayName = orgName || (author?author.name:'?');
+  var subtitle = orgName ? (orgType==='university'?'University':'Company') : (author && author.role==='student' ? 'Student' : (author?author.role:''));
+  return { displayName:displayName, subtitle:subtitle };
+}
+function PostCard(post){
+  var info = postAuthorInfo(post);
+  var likes = state.postLikes.filter(function(l){ return l.post_id===post.id; });
+  var me = currentUser();
+  var likedByMe = me && likes.some(function(l){ return l.user_id===me.id; });
+  var comments = state.postComments.filter(function(c){ return c.post_id===post.id; }).sort(function(a,b){ return a.created_at.localeCompare(b.created_at); });
+  var commentsHtml = comments.map(function(c){ var u=userById(c.user_id); return '<div class="post-card-comment"><span class="post-card-comment-author">'+esc(u?u.name:'?')+'</span>'+esc(c.body)+'</div>'; }).join('');
+  var heart = ICONS.heart.replace('{{FILL}}', likedByMe ? 'var(--accent)' : 'none');
+  var open = !!ui.openComments[post.id];
+  return '<div class="card post-card" data-post="'+post.id+'"><div class="card-body">'
+    + '<div class="row post-card-head">'+Avatar(info.displayName,44)+'<div><div class="post-card-author">'+esc(info.displayName)+'</div><div class="small muted">'+esc(info.subtitle)+' · '+fmtDate(post.created_at)+'</div></div></div>'
+    + '<div class="post-card-body">'+esc(post.body)+'</div>'
+    + '<div class="post-card-actions">'
+    + '<button type="button" class="btn btn-ghost btn-sm '+(likedByMe?'active-like':'')+'" onclick="App.toggleLike('+post.id+')">'+heart+' '+likes.length+'</button>'
+    + '<button type="button" class="btn btn-ghost btn-sm" onclick="App.toggleComments('+post.id+')">'+ICONS.comment+' '+comments.length+'</button>'
+    + '</div>'
+    + '<div class="post-card-comments '+(open?'':'hidden')+'" id="comments-'+post.id+'">'
+    + commentsHtml
+    + '<form class="row post-card-comment-form" onsubmit="return App.submitComment(event,'+post.id+')"><input class="input" id="comment-input-'+post.id+'" placeholder="Write a comment…"/><button type="submit" class="btn btn-sm btn-primary">Send</button></form>'
+    + '</div></div>';
+}
+function PostComposer(){
+  var user = currentUser();
+  return '<form class="post-composer" onsubmit="return App.submitPost(event)">'
+    + '<div class="row">'+Avatar(user.name,40)+'<textarea class="textarea" id="postComposerInput" placeholder="Share an update, insight, or announcement..." rows="2"></textarea></div>'
+    + '<div class="post-composer-actions"><button type="submit" class="btn btn-primary btn-sm">Post</button></div>'
+    + '</form>';
+}
+
+/* =========================================================================
+   PAGE: Feed
+   ========================================================================= */
+function feedPostsFor(user){
+  var acceptedConnIds = state.connections.filter(function(c){ return c.status==='accepted' && (c.requester_id===user.id||c.addressee_id===user.id); })
+    .map(function(c){ return c.requester_id===user.id?c.addressee_id:c.requester_id; });
+  var followed = state.follows.filter(function(f){ return f.user_id===user.id; });
+  return state.posts.filter(function(p){
+    if(p.author_user_id===user.id) return true;
+    if(p.org_type){ return followed.some(function(f){ return f.org_type===p.org_type && f.org_id===p.org_id; }) || (p.org_type==='university' && user.university_id && p.org_id===user.university_id); }
+    return acceptedConnIds.indexOf(p.author_user_id)!==-1;
+  }).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); }).slice(0,50);
+}
+function profileSummaryHtml(user){
+  if(user.role==='student'){
+    var p = studentProfile(user.id) || {};
+    var uni = uniById(user.university_id);
+    var strength = computeProfileStrength(p, studentSkillIds(user.id).length, state.experienceEntries.filter(function(e){return e.student_user_id===user.id;}).length, state.educationClaims.some(function(c){return c.student_user_id===user.id && c.status==='approved';}));
+    return Card({ body: '<div class="profile-summary">'+Avatar(user.name,56)+'<div class="profile-summary-name">'+esc(user.name)+' '+(p.verified?Badge('verified'):'')+'</div>'
+      + '<div class="small muted">'+esc(p.headline||'Add a headline to stand out')+'</div><div class="small muted">'+(uni?esc(uni.name):'')+'</div>'
+      + '<div class="profile-strength"><div class="row-between"><span class="small">Profile strength</span><span class="small">'+strength+'%</span></div><div class="progress"><div class="progress-bar" style="width:'+strength+'%"></div></div></div>'
+      + '<a href="#/student/profile" class="btn btn-ghost btn-sm" style="margin-top:8px;">Edit profile</a></div>' });
+  }
+  var org = user.role==='employer' ? companyById(user.company_id) : uniById(user.university_id);
+  var link = user.role==='employer' ? '#/company-page/'+(org?org.id:'') : '#/university-page/'+(org?org.id:'');
+  return Card({ body: '<div class="profile-summary">'+Avatar(org?org.name:user.name,56)+'<div class="profile-summary-name">'+esc(org?org.name:user.name)+'</div>'
+    + '<div class="small muted">'+esc(user.name)+' · '+(user.role==='employer'?'Recruiter':'University admin')+'</div>'
+    + (org?'<a href="'+link+'" class="btn btn-ghost btn-sm" style="margin-top:8px;">View page</a>':'')+'</div>' });
+}
+function studentSuggestions(meUser){
+  var excluded = {}; excluded[meUser.id]=1;
+  state.connections.filter(function(c){ return c.status==='pending'||c.status==='accepted'; }).filter(function(c){ return c.requester_id===meUser.id||c.addressee_id===meUser.id; })
+    .forEach(function(c){ excluded[c.requester_id===meUser.id?c.addressee_id:c.requester_id]=1; });
+  var mySkills = {}; studentSkillIds(meUser.id).forEach(function(id){ mySkills[id]=1; });
+  var candidates = state.users.filter(function(u){ return u.role==='student' && u.id!==meUser.id && !excluded[u.id]; });
+  var scored = candidates.map(function(c){
+    var uni = uniById(c.university_id);
+    var theirSkills = studentSkillIds(c.id);
+    var mutual = theirSkills.filter(function(id){ return mySkills[id]; }).length;
+    var sameUni = c.university_id===meUser.university_id ? 1 : 0;
+    var p = studentProfile(c.id) || {};
+    return { user_id:c.id, name:c.name, headline:p.headline||'', university_name: uni?uni.name:null, verified: !!p.verified, mutual: mutual, sameUni: sameUni };
+  });
+  scored.sort(function(a,b){ return (b.sameUni-a.sameUni) || (b.mutual-a.mutual); });
+  return scored.slice(0,8);
+}
+function pageFeed(user){
+  var posts = feedPostsFor(user);
+  var postsHtml = posts.length===0 ? EmptyState('📰','Your feed is quiet','Follow universities and companies, or connect with other students, to see updates here.') : posts.map(PostCard).join('');
+  var rightHtml;
+  if(user.role==='student'){
+    var sugg = studentSuggestions(user);
+    rightHtml = Card({ title:'People you may know', body: sugg.length===0 ? '<div class="muted small">No suggestions right now.</div>' : '<div class="stack">'+sugg.map(function(s){
+      return '<div class="row suggestion-row"><a href="#/profile/'+s.user_id+'" class="row" style="flex:1;">'+Avatar(s.name,36)+'<div><div class="small" style="font-weight:600;">'+esc(s.name)+' '+(s.verified?Badge('verified'):'')+'</div><div class="small muted">'+esc(s.headline||s.university_name||'')+'</div></div></a>'
+        + '<button type="button" class="btn btn-ghost btn-sm" onclick="App.connectRequest('+s.user_id+')">Connect</button></div>';
+    }).join('')+'</div>' });
+  } else {
+    var links = user.role==='employer'
+      ? [['#/employer/roles/new','Post a new role'],['#/employer/roles','Manage your roles'],['#/events','Browse events'],[user.company_id?'#/company-page/'+user.company_id:'#/employer','View company page']]
+      : [['#/university/verifications','Review verifications'],['#/university/cohort','View cohort'],['#/university/placements','Placement oversight'],[user.university_id?'#/university-page/'+user.university_id:'#/university','View university page']];
+    rightHtml = Card({ title:'Shortcuts', body:'<div class="stack">'+links.map(function(l){ return '<a href="'+l[0]+'" class="btn btn-ghost btn-sm" style="justify-content:flex-start;">'+l[1]+'</a>'; }).join('')+'</div>' });
+  }
+  return '<div class="page feed-page"><div class="feed-layout">'
+    + '<div class="feed-col feed-col-left">'+profileSummaryHtml(user)+'</div>'
+    + '<div class="feed-col feed-col-main">'+PostComposer()+postsHtml+'</div>'
+    + '<div class="feed-col feed-col-right">'+rightHtml+'</div>'
+    + '</div></div>';
+}
+
+/* =========================================================================
+   PAGE: Network
+   ========================================================================= */
+function followsPanelHtml(user){
+  var follows = state.follows.filter(function(f){ return f.user_id===user.id; });
+  var rows = follows.map(function(f){
+    var name = f.org_type==='university' ? (uniById(f.org_id)||{}).name : (companyById(f.org_id)||{}).name;
+    var link = f.org_type==='university' ? '#/university-page/'+f.org_id : '#/company-page/'+f.org_id;
+    return '<div class="row suggestion-row"><a href="'+link+'" class="row" style="flex:1;">'+Avatar(name,36)+'<div style="font-weight:600;">'+esc(name)+'</div></a>'
+      + '<button type="button" class="btn btn-ghost btn-sm" onclick="App.toggleFollow(\''+f.org_type+'\','+f.org_id+')">Unfollow</button></div>';
+  }).join('');
+  return Card({ title:'Following', body: follows.length===0 ? '<div class="muted small">You\'re not following anyone yet.</div>' : '<div class="stack">'+rows+'</div>' });
+}
+function connectionRow(person, rightHtml){
+  return '<div class="row suggestion-row"><a href="#/profile/'+person.user_id+'" class="row" style="flex:1;">'+Avatar(person.name,40)+'<div><div style="font-weight:600;">'+esc(person.name)+'</div><div class="small muted">'+esc(person.headline||person.university_name||'')+'</div></div></a>'+(rightHtml||'')+'</div>';
+}
+function myConnectionsShaped(user){
+  function rowShape(connId, otherId){
+    var other = userById(otherId);
+    var p = studentProfile(otherId) || {};
+    var uni = other.university_id ? uniById(other.university_id) : null;
+    return { connection_id:connId, user_id: other.id, name: other.name, headline: p.headline||'', university_name: uni?uni.name:null };
+  }
+  var accepted = state.connections.filter(function(c){ return c.status==='accepted' && (c.requester_id===user.id||c.addressee_id===user.id); })
+    .map(function(c){ return rowShape(c.id, c.requester_id===user.id?c.addressee_id:c.requester_id); });
+  var incoming = state.connections.filter(function(c){ return c.status==='pending' && c.addressee_id===user.id; }).map(function(c){ return rowShape(c.id, c.requester_id); });
+  var outgoing = state.connections.filter(function(c){ return c.status==='pending' && c.requester_id===user.id; }).map(function(c){ return rowShape(c.id, c.addressee_id); });
+  return { accepted:accepted, incoming:incoming, outgoing:outgoing };
+}
+function pageNetwork(user){
+  if(user.role!=='student'){
+    return '<div class="page"><div class="page-head"><h1>Network</h1></div>'
+      + EmptyState('🔗','Connections are a student feature','As an organisation you can follow and be followed. See who you\'re following below.')
+      + '<div style="margin-top:16px;">'+followsPanelHtml(user)+'</div></div>';
+  }
+  var tab = ui.tab.network || 'accepted';
+  var conns = myConnectionsShaped(user);
+  var sugg = studentSuggestions(user);
+  var tabs = [ {id:'accepted',label:'Connections',count:conns.accepted.length}, {id:'incoming',label:'Requests',count:conns.incoming.length}, {id:'outgoing',label:'Sent',count:conns.outgoing.length} ];
+  var listHtml;
+  if(tab==='accepted') listHtml = conns.accepted.length===0 ? EmptyState('🤝','No connections yet','Connect with fellow students to grow your network.') : conns.accepted.map(function(c){ return connectionRow(c); }).join('');
+  else if(tab==='incoming') listHtml = conns.incoming.length===0 ? EmptyState('📥','No pending requests','Incoming connection requests will show up here.') : conns.incoming.map(function(c){ return connectionRow(c, '<div class="row"><button type="button" class="btn btn-primary btn-sm" onclick="App.respondConnection('+c.connection_id+',\'accepted\')">Accept</button><button type="button" class="btn btn-ghost btn-sm" onclick="App.respondConnection('+c.connection_id+',\'declined\')">Decline</button></div>'); }).join('');
+  else listHtml = conns.outgoing.length===0 ? EmptyState('📤','No sent requests','Requests you\'ve sent will appear here until accepted.') : conns.outgoing.map(function(c){ return connectionRow(c, Badge('neutral','Pending')); }).join('');
+  var suggHtml = sugg.length===0 ? '<div class="muted small">No suggestions right now.</div>' : sugg.map(function(s){ return connectionRow({user_id:s.user_id,name:s.name,headline:s.headline,university_name:s.university_name}, '<button type="button" class="btn btn-ghost btn-sm" onclick="App.connectRequest('+s.user_id+')">Connect</button>'); }).join('');
+  return '<div class="page"><div class="page-head"><h1>Network</h1></div><div class="grid-2">'
+    + '<div class="stack">' + Card({ body: TabBar(tabs, tab, 'network') + '<div class="stack" style="margin-top:12px;">'+listHtml+'</div>' }) + followsPanelHtml(user) + '</div>'
+    + Card({ title:'People you may know', body:'<div class="stack">'+suggHtml+'</div>' })
+    + '</div></div>';
+}
+
+/* =========================================================================
+   PAGE: Messages
+   ========================================================================= */
+function otherUserId(thread, meId){ return thread.a_user_id===meId ? thread.b_user_id : thread.a_user_id; }
+function otherInfo(userId_){
+  var u = userById(userId_);
+  var orgName = null;
+  if(u.role==='employer' && u.company_id){ var c=companyById(u.company_id); orgName = c?c.name:null; }
+  else if(u.role==='university_admin' && u.university_id){ var uu=uniById(u.university_id); orgName = uu?uu.name:null; }
+  return { user_id:u.id, name:u.name, role:u.role, org_name:orgName };
+}
+function myThreads(user){
+  var threads = state.threads.filter(function(t){ return t.a_user_id===user.id||t.b_user_id===user.id; });
+  var result = threads.map(function(t){
+    var otherId = otherUserId(t, user.id);
+    var msgs = state.messages.filter(function(m){ return m.thread_id===t.id; }).sort(function(a,b){ return a.created_at.localeCompare(b.created_at); });
+    var last = msgs.length ? msgs[msgs.length-1] : null;
+    var unread = msgs.filter(function(m){ return m.sender_id!==user.id && !m.read; }).length;
+    return { id:t.id, other: otherInfo(otherId), last_message:last, unread:unread };
+  });
+  result.sort(function(a,b){ var ta=a.last_message?a.last_message.created_at:''; var tb=b.last_message?b.last_message.created_at:''; return tb.localeCompare(ta); });
+  return result;
+}
+function pageMessages(user, threadId){
+  var threads = myThreads(user);
+  var activeThread = threadId ? threads.filter(function(t){ return t.id===threadId; })[0] : null;
+  var listHtml = threads.length===0 ? EmptyState('💬','No conversations yet','Messages from your network will appear here.') : threads.map(function(t){
+    return '<button type="button" class="messages-thread-item '+(t.id===threadId?'active':'')+'" onclick="App.goto(\'#/messages/'+t.id+'\')">'+Avatar(t.other.name,40)
+      + '<div class="messages-thread-item-body"><div class="row-between"><span class="messages-thread-item-name">'+esc(t.other.name)+'</span>'+(t.last_message?'<span class="small muted">'+fmtTime(t.last_message.created_at)+'</span>':'')+'</div>'
+      + '<div class="small muted messages-thread-item-preview">'+esc(t.last_message?t.last_message.body:'Start the conversation')+'</div></div>'
+      + (t.unread>0?'<span class="unread-dot" style="position:static;border:none;"></span>':'')+'</button>';
+  }).join('');
+  var paneHtml;
+  if(!threadId){
+    paneHtml = EmptyState('✉️','Select a conversation','Choose a thread from the list to view messages.');
+  } else if(!activeThread){
+    paneHtml = EmptyState('✉️','Conversation not found','This thread is not available.');
+  } else {
+    // mark read
+    state.messages.forEach(function(m){ if(m.thread_id===threadId && m.sender_id!==user.id) m.read=1; });
+    saveState();
+    var msgs = state.messages.filter(function(m){ return m.thread_id===threadId; }).sort(function(a,b){ return a.created_at.localeCompare(b.created_at); });
+    var bubbles = msgs.map(function(m){ return '<div class="message-bubble '+(m.sender_id===user.id?'mine':'')+'"><div class="message-bubble-body">'+esc(m.body)+'</div><div class="small muted message-bubble-time">'+fmtTime(m.created_at)+'</div></div>'; }).join('');
+    paneHtml = '<div class="messages-pane-head">'+Avatar(activeThread.other.name,36)+'<div><div style="font-weight:600;">'+esc(activeThread.other.name)+'</div>'+(activeThread.other.org_name?'<div class="small muted">'+esc(activeThread.other.org_name)+'</div>':'')+'</div></div>'
+      + '<div class="messages-pane-body" id="messagesPaneBody">'+bubbles+'</div>'
+      + '<form class="messages-pane-composer row" onsubmit="return App.sendThreadMessage(event,'+threadId+')"><input class="input" id="messageBodyInput" placeholder="Write a message…" autocomplete="off"/><button type="submit" class="btn btn-primary btn-sm">Send</button></form>';
+  }
+  return '<div class="page messages-page"><div class="page-head"><h1>Messages</h1></div>'
+    + '<div class="messages-layout"><div class="messages-list">'+listHtml+'</div><div class="messages-pane">'+paneHtml+'</div></div></div>';
+}
+
+/* =========================================================================
+   PAGE: Events (shared browse) + Org events (own management)
+   ========================================================================= */
+function eventShape(ev, viewerId){
+  var orgName = ev.org_type==='company' ? (companyById(ev.org_id)||{}).name : (uniById(ev.org_id)||{}).name;
+  var regs = state.eventRegistrations.filter(function(r){ return r.event_id===ev.id; });
+  var registered = viewerId ? regs.some(function(r){ return r.user_id===viewerId; }) : false;
+  return { id:ev.id, org_type:ev.org_type, org_id:ev.org_id, org_name:orgName, title:ev.title, description:ev.description, date:ev.date, format:ev.format, location:ev.location, capacity:ev.capacity, registrations:regs.length, registered:registered };
+}
+function upcomingEvents(){ var now=Date.now(); return state.events.filter(function(e){ return Date.parse(e.date) >= now - 1000*60*60*24*365; }).sort(function(a,b){ return a.date.localeCompare(b.date); }); }
+function eventCardHtml(ev, user){
+  var shaped = eventShape(ev, user.id);
+  return Card({ title: shaped.title, body:
+    '<div class="small muted">'+esc(shaped.org_name||'')+'</div>'
+    + '<div class="small" style="margin-top:6px;">'+fmtDate(shaped.date)+' · '+(shaped.format==='virtual'?'Virtual':(shaped.location||'In person'))+'</div>'
+    + '<p class="small" style="margin-top:8px;">'+esc(shaped.description||'')+'</p>'
+    + '<div class="row-between" style="margin-top:12px;"><span class="small muted">'+shaped.registrations+' registered'+(shaped.capacity?' / '+shaped.capacity:'')+'</span>'
+    + (user.role==='student' ? '<button type="button" class="btn btn-sm '+(shaped.registered?'btn-ghost':'btn-primary')+'" onclick="App.toggleEventRegister('+ev.id+')">'+(shaped.registered?'Unregister':'Register')+'</button>' : '')
+    + '</div>' });
+}
+function createEventModalFooter(){ return '<button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancel</button><button type="submit" form="create-event-form" class="btn btn-primary">Create event</button>'; }
+function createEventModalBody(){
+  return '<form id="create-event-form" class="stack" onsubmit="return App.submitCreateEvent(event)">'
+    + '<div class="field"><label class="label">Title</label><input class="input" id="ev-title" required/></div>'
+    + '<div class="field"><label class="label">Description</label><textarea class="textarea" id="ev-desc"></textarea></div>'
+    + '<div class="row wrap"><div class="field"><label class="label">Date</label><input type="datetime-local" class="input" id="ev-date" required/></div>'
+    + '<div class="field"><label class="label">Format</label><select class="select" id="ev-format"><option value="virtual">Virtual</option><option value="in_person">In person</option></select></div></div>'
+    + '<div class="row wrap"><div class="field"><label class="label">Location (optional)</label><input class="input" id="ev-location"/></div>'
+    + '<div class="field"><label class="label">Capacity (optional)</label><input type="number" class="input" id="ev-capacity"/></div></div>'
+    + '</form>';
+}
+function pageEventsShared(user){
+  var events = upcomingEvents();
+  var canCreate = user.role==='employer' || user.role==='university_admin';
+  var body = events.length===0 ? EmptyState('📅','No upcoming events','Check back soon, or create one if you represent an organisation.') : '';
+  var grid = '<div class="grid-3">'+events.map(function(e){ return eventCardHtml(e,user); }).join('')+'</div>';
+  return '<div class="page"><div class="page-head"><h1>Events</h1>'+(canCreate?'<button type="button" class="btn btn-primary" onclick="App.openCreateEventModal()">Create event</button>':'')+'</div>'
+    + body + grid + '</div>';
+}
+function pageOrgEvents(user){
+  var orgType = user.role==='employer' ? 'company' : 'university';
+  var orgId = user.role==='employer' ? user.company_id : user.university_id;
+  var events = upcomingEvents();
+  var mine = events.filter(function(e){ return e.org_type===orgType && e.org_id===orgId; });
+  var expandedId = ui.expandedEvent;
+  var mineHtml = mine.length===0 ? EmptyState('📅','No events yet','Create an event to engage students.') : '<div class="stack">'+mine.map(function(e){
+    var shaped = eventShape(e, user.id);
+    var isExpanded = expandedId===e.id;
+    var regsHtml = '';
+    if(isExpanded){
+      var regs = state.eventRegistrations.filter(function(r){ return r.event_id===e.id; }).map(function(r){ var u=userById(r.user_id); var uni=u.university_id?uniById(u.university_id):null; return '<div class="small">'+esc(u.name)+' — '+esc(uni?uni.name:'')+'</div>'; }).join('');
+      regsHtml = '<div class="stack" style="margin-top:8px;margin-left:12px;">'+(regs || '<div class="muted small">No registrants yet.</div>')+'</div>';
+    }
+    return '<div><div class="row-between" style="cursor:pointer;" onclick="App.toggleExpandEvent('+e.id+')"><div><strong>'+esc(shaped.title)+'</strong><div class="muted small">'+fmtDate(shaped.date)+' · '+shaped.format+' · '+shaped.registrations+' registered</div></div><span class="muted small">'+(isExpanded?'Hide':'View')+' registrants</span></div>'+regsHtml+'</div>';
+  }).join('')+'</div>';
+  var allHtml = events.length===0 ? EmptyState('📅','No upcoming events','Check back soon.') : '<div class="stack">'+events.map(function(e){ var shaped=eventShape(e,user.id); return '<div class="row-between"><div><strong>'+esc(shaped.title)+'</strong><div class="muted small">'+esc(shaped.org_name||'')+' · '+fmtDate(shaped.date)+'</div></div><span class="muted small">'+shaped.registrations+' registered</span></div>'; }).join('')+'</div>';
+  return '<div class="page"><div class="page-head"><h1>Events</h1><button type="button" class="btn btn-primary" onclick="App.openCreateEventModal()">Create event</button></div>'
+    + Card({ title:'Your events', body: mineHtml })
+    + Card({ title:'All upcoming events', body: allHtml })
+    + '</div>';
+}
+
+/* =========================================================================
+   PAGE: Company / University org pages
+   ========================================================================= */
+function pageCompanyPage(user, id){
+  var org = companyById(id);
+  if(!org) return '<div class="page">'+EmptyState('🏢','Company not found','')+'</div>';
+  var followers = companyFollowers(id);
+  var following = isFollowing(user.id, 'company', id);
+  var isOwner = user.role==='employer' && user.company_id===id;
+  var openRoles = state.roles.filter(function(r){ return r.company_id===id && r.status==='open'; });
+  var posts = state.posts.filter(function(p){ return p.org_type==='company' && p.org_id===id; }).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); });
+  var events = state.events.filter(function(e){ return e.org_type==='company' && e.org_id===id; }).sort(function(a,b){ return a.date.localeCompare(b.date); });
+  return '<div class="page">'
+    + Card({ body: '<div class="row-between wrap"><div class="row">'+Avatar(org.name,72,org.banner_color)+'<div><h1 style="margin-bottom:4px;">'+esc(org.name)+'</h1><div class="small muted">'+esc((org.sectors||'').split(',').join(', '))+'</div><div class="small muted">'+followers+' followers</div>'+Badge('neutral','QS Employer Reputation participant')+'</div></div>'
+      + (!isOwner ? '<button type="button" class="btn '+(following?'btn-ghost':'btn-primary')+'" onclick="App.toggleFollow(\'company\','+id+')">'+(following?'Following':'Follow')+'</button>' : '')+'</div>' })
+    + '<div class="grid-2" style="margin-top:16px;align-items:start;">'
+    + '<div class="stack">'
+    + Card({ title:'About', body:'<p class="small">'+esc(org.about||'No description yet.')+'</p><div class="small muted">'+esc((org.locations||'').split(',').join(', '))+'</div>' })
+    + (isOwner ? PostComposer() : '')
+    + (posts.length===0 ? EmptyState('📰','No posts yet','Updates from this company will appear here.') : posts.map(PostCard).join(''))
+    + '</div>'
+    + '<div class="stack">'
+    + Card({ title:'Open roles', body: openRoles.length===0 ? '<div class="muted small">No open roles right now.</div>' : '<div class="stack">'+openRoles.map(function(r){ return '<a href="#/student/roles/'+r.id+'" class="stack" style="gap:2px;"><div style="font-weight:600;">'+esc(r.title)+'</div><div class="small muted">'+r.type+' · '+esc(r.location)+'</div></a>'; }).join('')+'</div>' })
+    + Card({ title:'Upcoming events', body: events.length===0 ? '<div class="muted small">No upcoming events.</div>' : '<div class="stack">'+events.map(function(e){ return '<div><div style="font-weight:600;">'+esc(e.title)+'</div><div class="small muted">'+fmtDate(e.date)+'</div></div>'; }).join('')+'</div>' })
+    + '</div></div></div>';
+}
+function pageUniversityPage(user, id){
+  var org = uniById(id);
+  if(!org) return '<div class="page">'+EmptyState('🎓','University not found','')+'</div>';
+  var followers = uniFollowers(id);
+  var following = isFollowing(user.id, 'university', id);
+  var isOwner = user.role==='university_admin' && user.university_id===id;
+  var studentCount = state.users.filter(function(u){ return u.role==='student' && u.university_id===id; }).length;
+  var posts = state.posts.filter(function(p){ return p.org_type==='university' && p.org_id===id; }).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); });
+  var events = state.events.filter(function(e){ return e.org_type==='university' && e.org_id===id; }).sort(function(a,b){ return a.date.localeCompare(b.date); });
+  return '<div class="page">'
+    + Card({ body: '<div class="row-between wrap"><div class="row">'+Avatar(org.name,72)+'<div><h1 style="margin-bottom:4px;">'+esc(org.name)+'</h1><div class="small muted">'+esc(org.city)+(org.country?', '+esc(org.country):'')+'</div><div class="small muted">'+followers+' followers · '+studentCount+' students on QS Connect</div></div></div>'
+      + (!isOwner ? '<button type="button" class="btn '+(following?'btn-ghost':'btn-primary')+'" onclick="App.toggleFollow(\'university\','+id+')">'+(following?'Following':'Follow')+'</button>' : '')+'</div>' })
+    + Card({ title:'QS data', cls:'qs-data-panel', body:'<div class="grid-3">'+StatCard('World rank', org.qs_rank?('#'+org.qs_rank):'—','','#d97706')+StatCard('Employer reputation', org.employer_reputation!=null?org.employer_reputation:'—','','#d97706')+StatCard('Employment outcomes', org.employment_outcomes!=null?org.employment_outcomes:'—','','#d97706')+'</div>' })
+    + '<div class="grid-2" style="margin-top:16px;align-items:start;">'
+    + '<div class="stack">'
+    + Card({ title:'About', body:'<p class="small">'+esc(org.about||'No description yet.')+'</p>' })
+    + (isOwner ? PostComposer() : '')
+    + (posts.length===0 ? EmptyState('📰','No posts yet','Announcements from this university will appear here.') : posts.map(PostCard).join(''))
+    + '</div>'
+    + Card({ title:'Upcoming events', body: events.length===0 ? '<div class="muted small">No upcoming events.</div>' : '<div class="stack">'+events.map(function(e){ return '<div><div style="font-weight:600;">'+esc(e.title)+'</div><div class="small muted">'+fmtDate(e.date)+'</div></div>'; }).join('')+'</div>' })
+    + '</div></div>';
+}
+function pageStudentProfileView(viewer, userId){
+  var student = userById(userId);
+  if(!student || student.role!=='student') return '<div class="page">'+EmptyState('🙈','Student not found','')+'</div>';
+  var p = studentProfile(userId) || {};
+  var uni = student.university_id ? uniById(student.university_id) : null;
+  var skills = studentSkillObjs(userId);
+  var experience = state.experienceEntries.filter(function(e){ return e.student_user_id===userId; }).sort(function(a,b){ return (b.start_date||'').localeCompare(a.start_date||''); });
+  var education = state.educationClaims.filter(function(c){ return c.student_user_id===userId && c.status==='approved'; });
+  var connState = connectionState(viewer.id, userId);
+  var canMsg = canMessage(viewer.id, userId);
+  var connBtn = '';
+  if(viewer.id===userId){ connBtn=''; }
+  else if(connState==='none') connBtn = '<button type="button" class="btn btn-primary" onclick="App.connectRequest('+userId+')">Connect</button>';
+  else if(connState==='pending_out') connBtn = '<button type="button" class="btn btn-ghost" disabled>Request sent</button>';
+  else if(connState==='pending_in') connBtn = '<span class="small muted">Sent you a request — respond from Network</span>';
+  else if(connState==='connected') connBtn = Badge('neutral','Connected');
+  if(canMsg && viewer.id!==userId) connBtn += ' <button type="button" class="btn btn-ghost" onclick="App.openMessageModal('+userId+')">Message</button>';
+  return '<div class="page">'
+    + Card({ body:'<div class="row-between wrap" style="align-items:flex-start;"><div class="row">'+Avatar(student.name,72)+'<div><h1 style="margin-bottom:4px;">'+esc(student.name)+' '+(p.verified?Badge('verified'):'')+'</h1><div class="muted">'+esc(p.headline||'')+'</div>'+(uni?'<div class="small muted">'+esc(uni.name)+(uni.qs_rank?' · QS #'+uni.qs_rank:'')+'</div>':'')+'</div></div><div class="row">'+connBtn+'</div></div>' })
+    + '<div class="grid-2" style="margin-top:16px;">'
+    + '<div class="stack">'
+    + Card({ title:'About', body:'<p class="small">'+esc(p.about||'No summary provided yet.')+'</p>' })
+    + Card({ title:'Experience', body: experience.length===0 ? EmptyState('💼','No experience listed','Nothing added yet.') : '<div class="stack">'+experience.map(function(ex){ return '<div><div style="font-weight:600;">'+esc(ex.title)+' · '+esc(ex.organisation)+'</div><div class="small muted">'+(ex.start_date||'')+(ex.end_date?' – '+ex.end_date:(ex.start_date?' – Present':''))+'</div>'+(ex.description?'<p class="small">'+esc(ex.description)+'</p>':'')+'</div>'; }).join('')+'</div>' })
+    + Card({ title:'Education', body: education.length===0 ? EmptyState('🎓','No verified education','This student has no approved education claims yet.') : '<div class="stack">'+education.map(function(ed){ var u2=uniById(ed.university_id); return '<div><div style="font-weight:600;">'+esc(ed.course)+'</div><div class="small muted">'+esc(u2?u2.name:'')+' · '+ed.start_year+'–'+ed.end_year+'</div></div>'; }).join('')+'</div>' })
+    + '</div>'
+    + Card({ title:'Skills', body: skills.length===0 ? '<div class="muted small">No skills added yet.</div>' : '<div class="skill-tag-grid">'+skills.map(function(s){ return SkillTag(s.name); }).join('')+'</div>' })
+    + '</div></div>';
+}
+
+/* =========================================================================
+   STUDENT: role cards / matching helpers
+   ========================================================================= */
+function roleCardShape(role, viewerUser){
+  var company = companyById(role.company_id);
+  var card = { id:role.id, company_id:role.company_id, title:role.title, type:role.type, sector:role.sector, location:role.location, remote:role.remote, paid:role.paid, sponsors_visa:role.sponsors_visa, deadline:role.deadline, status:role.status, created_at:role.created_at, company: company?{id:company.id,name:company.name}:null };
+  if(viewerUser && viewerUser.role==='student'){
+    card.match = matchForStudent(viewerUser.id, role);
+    var app = state.applications.filter(function(a){ return a.role_id===role.id && a.student_user_id===viewerUser.id; })[0];
+    card.my_application_status = app ? app.status : null;
+    card.invited = state.roleInvites.some(function(ri){ return ri.role_id===role.id && ri.student_user_id===viewerUser.id; });
+  }
+  return card;
+}
+function openRoleCards(viewerUser){
+  var rows = state.roles.filter(function(r){ return r.status==='open'; });
+  var cards = rows.map(function(r){ return roleCardShape(r, viewerUser); });
+  if(viewerUser.role==='student') cards.sort(function(a,b){ return b.match.score - a.match.score; });
+  else cards.sort(function(a,b){ return b.created_at.localeCompare(a.created_at); });
+  return cards;
+}
+
+/* =========================================================================
+   PAGE: Student Dashboard
+   ========================================================================= */
+function pageStudentDashboard(user){
+  var p = studentProfile(user.id) || {};
+  var apps = myApplicationsShaped(user);
+  var conns = myConnectionsShaped(user);
+  var roles = openRoleCards(user);
+  var events = upcomingEvents().map(function(e){ return eventShape(e, user.id); });
+  var offers = apps.filter(function(a){ return a.status==='offer'||a.status==='hired'; }).length;
+  var topRoles = roles.slice(0,5);
+  var upcoming = events.filter(function(e){ return e.registered; }).slice(0,5);
+  var strength = computeProfileStrength(p, studentSkillIds(user.id).length, state.experienceEntries.filter(function(e){return e.student_user_id===user.id;}).length, state.educationClaims.some(function(c){return c.student_user_id===user.id && c.status==='approved';}));
+  return '<div class="page"><div class="page-head"><h1>Welcome back, '+esc(user.name.split(' ')[0])+'</h1></div>'
+    + (!p.verified ? Card({ body:'<strong>Verification pending</strong><div class="muted small">Your university hasn\'t verified your enrolment yet. Some employers may wait for this badge before responding.</div>' }) : '')
+    + '<div class="grid-3">'+StatCard('Applications', apps.length, '📄')+StatCard('Offers', offers, '🎉')+StatCard('Connections', conns.accepted.length, '🤝')+'</div>'
+    + Card({ title:'Profile strength', body:'<div class="progress"><div class="progress-bar" style="width:'+strength+'%"></div></div><div class="muted small">'+strength+'% complete</div>' })
+    + '<div class="grid-2">'
+    + Card({ title:'Recommended roles', action:'<a href="#/student/roles" class="btn btn-ghost btn-sm">Browse all</a>', body: topRoles.length===0 ? EmptyState('🎯','No roles yet','Check back soon for new opportunities.') : '<div class="stack">'+topRoles.map(function(r){
+        var gapsHtml = r.match && r.match.gaps.length ? SkillTag('Add: '+r.match.gaps.slice(0,3).join(', '), 'gap') : '';
+        return '<a href="#/student/roles/'+r.id+'" class="row-between" style="text-decoration:none;color:inherit;border-bottom:1px solid var(--border);padding-bottom:8px;"><div><div><strong>'+esc(r.title)+'</strong></div><div class="muted small">'+esc(r.company?r.company.name:'')+' · '+esc(r.location)+'</div>'+gapsHtml+'</div>'+(r.match?MatchPill(r.match.score):'')+'</a>';
+      }).join('')+'</div>' })
+    + Card({ title:'Upcoming events', action:'<a href="#/events" class="btn btn-ghost btn-sm">All events</a>', body: upcoming.length===0 ? EmptyState('📅','No registered events','Register for an event to see it here.') : '<div class="stack">'+upcoming.map(function(e){ return '<div class="row-between"><div><div><strong>'+esc(e.title)+'</strong></div><div class="muted small">'+esc(e.org_name||'')+'</div></div><div class="muted small">'+fmtDate(e.date)+'</div></div>'; }).join('')+'</div>' })
+    + '</div></div>';
+}
+
+/* =========================================================================
+   PAGE: Browse roles
+   ========================================================================= */
+function pageStudentBrowseRoles(user){
+  var allOpen = state.roles.filter(function(r){ return r.status==='open'; });
+  var sectors = Array.from(new Set(allOpen.map(function(r){return r.sector;}))).sort();
+  var locations = Array.from(new Set(allOpen.map(function(r){return r.location;}))).sort();
+  return '<div class="page"><div class="page-head"><h1>Browse roles</h1></div>'
+    + Card({ body: '<div class="filter-bar">'
+      + '<input class="input" id="rf-search" placeholder="Search roles…" style="min-width:220px;max-width:280px;" oninput="App.refreshBrowseRoles()"/>'
+      + '<select class="select" id="rf-type" style="max-width:180px;" onchange="App.refreshBrowseRoles()"><option value="">All types</option><option value="internship">Internship</option><option value="placement">Placement</option><option value="graduate">Graduate role</option></select>'
+      + '<select class="select" id="rf-sector" style="max-width:180px;" onchange="App.refreshBrowseRoles()"><option value="">All sectors</option>'+sectors.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join('')+'</select>'
+      + '<select class="select" id="rf-location" style="max-width:180px;" onchange="App.refreshBrowseRoles()"><option value="">All locations</option>'+locations.map(function(l){return '<option value="'+esc(l)+'">'+esc(l)+'</option>';}).join('')+'</select>'
+      + '<label class="row small" style="gap:4px;"><input type="checkbox" id="rf-remote" onchange="App.refreshBrowseRoles()"/> Remote</label>'
+      + '<label class="row small" style="gap:4px;"><input type="checkbox" id="rf-visa" onchange="App.refreshBrowseRoles()"/> Sponsors visa</label>'
+      + '</div>' })
+    + '<div id="rolesResults" class="stack" style="margin-top:16px;">'+renderRolesResults(user)+'</div>'
+    + '</div>';
+}
+function renderRolesResults(user){
+  var search = (document.getElementById('rf-search')||{}).value || '';
+  var type = (document.getElementById('rf-type')||{}).value || '';
+  var sector = (document.getElementById('rf-sector')||{}).value || '';
+  var location = (document.getElementById('rf-location')||{}).value || '';
+  var remote = (document.getElementById('rf-remote')||{}).checked || false;
+  var visa = (document.getElementById('rf-visa')||{}).checked || false;
+  var cards = openRoleCards(user).filter(function(r){
+    if(search){ var s=search.toLowerCase(); var role=roleById(r.id); if(role.title.toLowerCase().indexOf(s)===-1 && role.description.toLowerCase().indexOf(s)===-1) return false; }
+    if(type && r.type!==type) return false;
+    if(sector && r.sector!==sector) return false;
+    if(location && r.location!==location) return false;
+    if(remote && !r.remote) return false;
+    if(visa && !r.sponsors_visa) return false;
+    return true;
+  });
+  if(cards.length===0) return EmptyState('🔍','No roles found','Try widening your filters.');
+  return cards.map(function(r){
+    var overlap = (r.match?r.match.overlap:[]).map(function(s){ return SkillTag(s,'overlap'); }).join('');
+    var gaps = (r.match?r.match.gaps:[]).map(function(s){ return SkillTag(s,'gap'); }).join('');
+    var statusHtml = r.my_application_status ? Badge('status-'+r.my_application_status) : (r.invited ? Badge('neutral','Invited') : '');
+    return Card({ body: '<div class="row-between" style="align-items:flex-start;"><a href="#/student/roles/'+r.id+'" style="flex:1;color:inherit;text-decoration:none;cursor:pointer;">'
+      + '<div class="row" style="gap:8px;"><strong>'+esc(r.title)+'</strong>'+(r.match?MatchPill(r.match.score):'')+'</div>'
+      + '<div class="muted small">'+esc(r.company?r.company.name:'')+' · '+r.type+' · '+esc(r.location)+(r.remote?' · Remote':'')+'</div>'
+      + '<div class="row wrap" style="gap:6px;margin-top:6px;">'+overlap+gaps+'</div>'
+      + '<div class="muted small">Deadline '+fmtDate(r.deadline)+'</div></a><div>'+statusHtml+'</div></div>' });
+  }).join('');
+}
+
+/* =========================================================================
+   PAGE: Role detail (student)
+   ========================================================================= */
+function pageStudentRoleDetail(user, roleId_){
+  var role = roleById(roleId_);
+  if(!role) return '<div class="page">'+EmptyState('🔍','Role not found','')+'</div>';
+  var card = roleCardShape(role, user);
+  var applicantCount = state.applications.filter(function(a){ return a.role_id===role.id; }).length;
+  var reqSkills = requiredSkillsForRole(role.id);
+  var applyBody;
+  if(card.my_application_status){
+    applyBody = '<div class="stack">'+Badge('status-'+card.my_application_status)+'<p class="muted small">You\'ve already applied to this role. You can withdraw from the <a href="#/student/applications">Applications</a> page.</p></div>';
+  } else if(role.status==='closed'){
+    applyBody = '<p class="muted">This role is closed to new applications.</p>';
+  } else {
+    applyBody = '<div class="stack">'+(card.invited?Badge('neutral',"You're invited to apply"):'')
+      + '<label class="field"><span class="label">Note (optional)</span><textarea class="textarea" id="applyNote" placeholder="Add a short note to your application…"></textarea></label>'
+      + '<button type="button" class="btn btn-primary" onclick="App.applyToRole('+role.id+')">Apply</button></div>';
+  }
+  return '<div class="page"><div class="page-head"><div><h1>'+esc(role.title)+'</h1><div class="muted"><a href="#/company-page/'+role.company_id+'">'+esc((companyById(role.company_id)||{}).name)+'</a> · '+role.type+' · '+esc(role.location)+(role.remote?' · Remote':'')+'</div></div>'+(card.match?MatchPill(card.match.score):'')+'</div>'
+    + '<div class="grid-2"><div class="stack">'
+    + Card({ title:'Description', body:'<p>'+esc(role.description)+'</p><div class="muted small">'+esc(role.paid||'Unpaid')+' · '+(role.sponsors_visa?'Sponsors visa':'No visa sponsorship')+' · Deadline '+fmtDate(role.deadline)+' · '+applicantCount+' applicant'+(applicantCount===1?'':'s')+'</div>' })
+    + Card({ title:'Required skills', body:'<div class="row wrap" style="gap:6px;">'+reqSkills.map(function(s){ return SkillTag(s.name, s.weight==='high'?'high':'medium'); }).join('')+'</div>' })
+    + (card.match ? Card({ title:'Your match', body: MatchPill(card.match.score)+'<div class="stack" style="margin-top:10px;">'
+        + '<div><div class="label">Matching skills</div><div class="row wrap" style="gap:6px;">'+(card.match.overlap.length?card.match.overlap.map(function(s){return SkillTag(s,'overlap');}).join(''):'<span class="muted small">None yet</span>')+'</div></div>'
+        + '<div><div class="label">Skill gaps</div><div class="row wrap" style="gap:6px;">'+(card.match.gaps.length?card.match.gaps.map(function(s){return SkillTag(s,'gap');}).join(''):'<span class="muted small">None — full match</span>')+'</div></div></div>' }) : '')
+    + '</div>'
+    + Card({ title:'Apply', body: applyBody })
+    + '</div></div>';
+}
+
+/* =========================================================================
+   PAGE: My applications
+   ========================================================================= */
+var TERMINAL = ['hired','rejected','withdrawn'];
+function myApplicationsShaped(user){
+  var apps = state.applications.filter(function(a){ return a.student_user_id===user.id; }).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); });
+  return apps.map(function(a){
+    var role = roleById(a.role_id);
+    var company = role ? companyById(role.company_id) : null;
+    var timeline = state.applicationEvents.filter(function(e){ return e.application_id===a.id; }).sort(function(x,y){ return x.created_at.localeCompare(y.created_at) || (x.id-y.id); });
+    return { id:a.id, role:{ id: role?role.id:null, title: role?role.title:'', company_name: company?company.name:'' }, status:a.status, placement_approved: !!a.placement_approved, note:a.note, timeline:timeline, created_at:a.created_at };
+  });
+}
+function pageStudentApplications(user){
+  var apps = myApplicationsShaped(user);
+  var body = apps.length===0 ? EmptyState('📄','No applications yet','Browse roles and apply to start tracking here.', '<a href="#/student/roles" class="btn btn-primary btn-sm">Browse roles</a>')
+    : '<div class="stack">'+apps.map(function(a){
+      var timelineHtml = a.timeline.map(function(t){ return '<div class="row small" style="gap:8px;">'+Badge('status-'+t.status)+'<span class="muted">'+fmtDate(t.created_at)+'</span></div>'; }).join('');
+      return Card({ body: '<div class="row-between" style="align-items:flex-start;"><div><div><a href="#/student/roles/'+a.role.id+'"><strong>'+esc(a.role.title)+'</strong></a></div><div class="muted small">'+esc(a.role.company_name)+'</div>'+(a.note?'<div class="small">&ldquo;'+esc(a.note)+'&rdquo;</div>':'')+'</div>'
+        + '<div class="stack" style="align-items:flex-end;">'+Badge('status-'+a.status)+(a.placement_approved?Badge('neutral','University approved'):'')+'</div></div>'
+        + '<div style="margin-top:12px;border-left:2px solid var(--border);padding-left:10px;" class="stack">'+timelineHtml+'</div>'
+        + (TERMINAL.indexOf(a.status)===-1 ? '<div style="margin-top:10px;"><button type="button" class="btn btn-danger btn-sm" onclick="App.confirmWithdraw('+a.id+')">Withdraw</button></div>' : '') });
+    }).join('')+'</div>';
+  return '<div class="page"><div class="page-head"><h1>My applications</h1></div>'+body+'</div>';
+}
+
+/* =========================================================================
+   PAGE: Edit profile (student)
+   ========================================================================= */
+function pageStudentEditProfile(user){
+  var p = studentProfile(user.id) || {};
+  if(ui.profileFormSkills===null || ui.profileFormSkills===undefined){ ui.profileFormSkills = new Set(studentSkillIds(user.id)); }
+  var experience = state.experienceEntries.filter(function(e){ return e.student_user_id===user.id; });
+  var claims = state.educationClaims.filter(function(c){ return c.student_user_id===user.id; });
+  var grouped = {};
+  state.skills.forEach(function(s){ (grouped[s.category]=grouped[s.category]||[]).push(s); });
+  var skillsHtml = renderProfileSkillsGrid(grouped);
+  return '<div class="page"><div class="page-head"><h1>Edit profile</h1></div>'
+    + Card({ title:'About', body: '<div class="stack">'
+      + '<label class="field"><span class="label">Headline</span><input class="input" id="pf-headline" value="'+esc(p.headline||'')+'" placeholder="e.g. Final-year Computer Science student"/></label>'
+      + '<label class="field"><span class="label">About</span><textarea class="textarea" id="pf-about">'+esc(p.about||'')+'</textarea></label>'
+      + '<div><button type="button" class="btn btn-primary btn-sm" onclick="App.saveProfileBasics()">Save</button></div></div>' })
+    + Card({ title:'Skills', body:'<div class="stack" id="profileSkillsGrid">'+skillsHtml+'</div><div style="margin-top:10px;"><button type="button" class="btn btn-primary btn-sm" onclick="App.saveProfileSkills()">Save skills</button></div>' })
+    + Card({ title:'Experience', body:'<div class="stack">'
+      + (experience.length===0?'<div class="muted small">No experience added yet.</div>':'')
+      + experience.map(function(ex){ return '<div class="row-between"><div><strong>'+esc(ex.title)+'</strong> <span class="muted small">at '+esc(ex.organisation)+'</span><div class="muted small">'+(ex.start_date||'')+' – '+(ex.end_date||'Present')+'</div></div><button type="button" class="btn btn-ghost btn-sm" onclick="App.removeExperience('+ex.id+')">Remove</button></div>'; }).join('')
+      + '<div class="row wrap" style="gap:8px;margin-top:8px;">'
+      + '<input class="input" id="exp-title" placeholder="Title" style="max-width:160px;"/>'
+      + '<input class="input" id="exp-org" placeholder="Organisation" style="max-width:160px;"/>'
+      + '<input class="input" id="exp-start" placeholder="Start (YYYY-MM-DD)" style="max-width:170px;"/>'
+      + '<input class="input" id="exp-end" placeholder="End (optional)" style="max-width:170px;"/>'
+      + '<input class="input" id="exp-desc" placeholder="Description" style="max-width:200px;"/>'
+      + '<button type="button" class="btn btn-primary btn-sm" onclick="App.addExperience()">Add</button></div></div>' })
+    + Card({ title:'Interests & preferences', body:'<div class="stack">'
+      + '<label class="field"><span class="label">Sectors of interest (comma-separated)</span><input class="input" id="pf-interests" value="'+esc(p.interests_sectors||'')+'"/></label>'
+      + '<label class="field"><span class="label">Preferred locations (comma-separated)</span><input class="input" id="pf-locations" value="'+esc(p.preferred_locations||'')+'"/></label>'
+      + '<label class="row small" style="gap:6px;"><input type="checkbox" id="pf-workrights" '+(p.work_rights?'checked':'')+'/> I have the right to work in my target market</label>'
+      + '<label class="row small" style="gap:6px;"><input type="checkbox" id="pf-relocate" '+(p.open_to_relocate?'checked':'')+'/> Open to relocating</label>'
+      + '<label class="row small" style="gap:6px;"><input type="checkbox" id="pf-opps" '+(p.open_to_opportunities?'checked':'')+'/> Open to opportunities (visible to employers)</label>'
+      + '<div><button type="button" class="btn btn-primary btn-sm" onclick="App.saveProfileToggles()">Save preferences</button></div></div>' })
+    + Card({ title:'Education', body:'<div class="stack">'
+      + (claims.length===0?'<div class="muted small">No education claims yet.</div>':'')
+      + claims.map(function(c){ var u=uniById(c.university_id); return '<div class="row-between"><div><strong>'+esc(c.course)+'</strong><div class="muted small">'+esc(u?u.name:'')+' · '+c.start_year+'–'+c.end_year+'</div></div>'+Badge('status-'+c.status)+'</div>'; }).join('')
+      + '<div class="row wrap" style="gap:8px;margin-top:8px;">'
+      + '<select class="select" id="claim-uni" style="max-width:220px;"><option value="">Select university</option>'+state.universities.map(function(u){ return '<option value="'+u.id+'">'+esc(u.name)+'</option>'; }).join('')+'</select>'
+      + '<input class="input" id="claim-course" placeholder="Course" style="max-width:180px;"/>'
+      + '<input class="input" id="claim-start" placeholder="Start year" style="max-width:100px;"/>'
+      + '<input class="input" id="claim-end" placeholder="End year" style="max-width:100px;"/>'
+      + '<button type="button" class="btn btn-primary btn-sm" onclick="App.addEducationClaim()">Add claim</button></div></div>' })
+    + '</div>';
+}
+function renderProfileSkillsGrid(grouped){
+  return Object.keys(grouped).map(function(category){
+    return '<div><div class="label">'+esc(category)+'</div><div class="skill-tag-grid" style="margin-top:6px;">'+grouped[category].map(function(s){
+      var sel = ui.profileFormSkills.has(s.id);
+      return '<span class="skill-tag-pick '+(sel?'selected':'')+'" onclick="App.toggleProfileSkill('+s.id+')">'+esc(s.name)+'</span>';
+    }).join('')+'</div></div>';
+  }).join('');
+}
+
+/* =========================================================================
+   EMPLOYER: helpers
+   ========================================================================= */
+var APP_STATUSES = ['applied','shortlisted','interview','offer','hired','rejected'];
+function employerRolesShaped(user){
+  var roles = state.roles.filter(function(r){ return r.company_id===user.company_id; }).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); });
+  return roles.map(function(r){
+    var counts = {};
+    APP_STATUSES.forEach(function(st){ counts[st] = state.applications.filter(function(a){ return a.role_id===r.id && a.status===st; }).length; });
+    return Object.assign({}, r, { counts: counts });
+  });
+}
+var STAGE_COLORS = { applied:'#94a3b8', shortlisted:'#60a5fa', interview:'#818cf8', offer:'#fbbf24', hired:'#22c55e', rejected:'#f87171' };
+
+function pageEmployerDashboard(user){
+  var company = companyById(user.company_id);
+  if(!company) return '<div class="page">'+EmptyState('🏢','No company linked','')+'</div>';
+  var roles = employerRolesShaped(user);
+  var events = upcomingEvents().map(function(e){ return eventShape(e,user.id); });
+  var liveRoles = roles.filter(function(r){ return r.status==='open'; }).length;
+  var totalApplicants = roles.reduce(function(sum,r){ return sum + Object.values(r.counts).reduce(function(a,b){return a+b;},0); }, 0);
+  var offersOut = roles.reduce(function(sum,r){ return sum + (r.counts.offer||0); }, 0);
+  var followers = companyFollowers(user.company_id);
+  var ownEvents = events.filter(function(e){ return e.org_type==='company' && e.org_id===user.company_id; }).slice(0,5);
+  var rolesBody = roles.length===0 ? EmptyState('📌','No roles yet','Post your first role to start receiving applicants.', '<a href="#/employer/roles/new" class="btn btn-primary btn-sm">Post a role</a>')
+    : '<div class="stack">'+roles.map(function(r){
+      var total = Object.values(r.counts).reduce(function(a,b){return a+b;},0) || 1;
+      var bar = Object.keys(r.counts).map(function(stage){ var c=r.counts[stage]; return c>0 ? '<div title="'+stage+': '+c+'" style="width:'+(c/total*100)+'%;background:'+STAGE_COLORS[stage]+';height:100%;"></div>' : ''; }).join('');
+      return '<a href="#/employer/roles/'+r.id+'" style="text-decoration:none;color:inherit;display:block;"><div class="row-between"><strong>'+esc(r.title)+'</strong><span class="muted small">'+Object.values(r.counts).reduce(function(a,b){return a+b;},0)+' applicants</span></div><div class="stage-bar">'+bar+'</div></a>';
+    }).join('')+'</div>';
+  var eventsBody = ownEvents.length===0 ? EmptyState('📅','No events yet','Create an event to engage students.') : '<div class="stack">'+ownEvents.map(function(e){ return '<div class="row-between"><strong>'+esc(e.title)+'</strong><span class="muted small">'+fmtDate(e.date)+'</span></div>'; }).join('')+'</div>';
+  return '<div class="page"><div class="page-head"><h1>Employer dashboard</h1></div>'
+    + '<div class="grid-4">'+StatCard('Live roles', liveRoles,'📌')+StatCard('Total applicants', totalApplicants,'🧑‍💼')+StatCard('Offers out', offersOut,'🎉')+StatCard('Followers', followers,'⭐')+'</div>'
+    + '<div class="row" style="gap:10px;"><a href="#/employer/roles/new" class="btn btn-primary btn-sm">Post a role</a><a href="#/company-page/'+company.id+'" class="btn btn-ghost btn-sm">View company page</a></div>'
+    + Card({ title:'Your roles', action:'<a href="#/employer/roles" class="btn btn-ghost btn-sm">Manage roles</a>', body: rolesBody })
+    + Card({ title:'Upcoming events', action:'<a href="#/employer/events" class="btn btn-ghost btn-sm">Manage events</a>', body: eventsBody })
+    + '</div>';
+}
+function pageEmployerRoles(user){
+  var roles = employerRolesShaped(user);
+  var body;
+  if(roles.length===0){
+    body = EmptyState('📌','No roles yet','Post your first role.', '<a href="#/employer/roles/new" class="btn btn-primary btn-sm">Post a role</a>');
+  } else {
+    var rows = roles.map(function(r){
+      var badges = APP_STATUSES.filter(function(st){ return r.counts[st]>0; }).map(function(st){ return Badge('status-'+st, st.charAt(0).toUpperCase()+st.slice(1)+': '+r.counts[st]); }).join(' ');
+      if(!badges) badges = '<span class="muted small">No applicants yet</span>';
+      return '<tr><td><a href="#/employer/roles/'+r.id+'">'+esc(r.title)+'</a></td><td>'+r.type+'</td><td><div class="row small wrap" style="gap:6px;">'+badges+'</div></td><td>'+fmtDate(r.deadline)+'</td><td>'+Badge('status-'+r.status)+'</td><td>'+(r.status==='open'?'<button type="button" class="btn btn-ghost btn-sm" onclick="App.closeRole('+r.id+')">Close</button>':'')+'</td></tr>';
+    }).join('');
+    body = '<div class="table-wrap"><table class="table"><thead><tr><th>Title</th><th>Type</th><th>Applicants by stage</th><th>Deadline</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+  return '<div class="page"><div class="page-head"><h1>Your roles</h1><a href="#/employer/roles/new" class="btn btn-primary">Post role</a></div>'+body+'</div>';
+}
+
+/* =========================================================================
+   PAGE: Post a role
+   ========================================================================= */
+function pageEmployerRoleForm(user){
+  ui.roleFormSkills = {};
+  var grouped = {};
+  state.skills.forEach(function(s){ (grouped[s.category]=grouped[s.category]||[]).push(s); });
+  return '<div class="page"><div class="page-head"><h1>Post a role</h1></div>'
+    + Card({ body: '<div class="stack">'
+      + '<label class="field"><span class="label">Title</span><input class="input" id="role-title"/></label>'
+      + '<div class="row wrap" style="gap:12px;">'
+      + '<label class="field"><span class="label">Type</span><select class="select" id="role-type"><option value="internship">Internship</option><option value="placement">Placement</option><option value="graduate">Graduate role</option></select></label>'
+      + '<label class="field"><span class="label">Sector</span><input class="input" id="role-sector"/></label>'
+      + '<label class="field"><span class="label">Location</span><input class="input" id="role-location"/></label>'
+      + '<label class="field"><span class="label">Deadline</span><input type="date" class="input" id="role-deadline"/></label>'
+      + '</div>'
+      + '<label class="field"><span class="label">Pay (optional)</span><input class="input" id="role-paid" placeholder="e.g. £24,000 / £500 per week"/></label>'
+      + '<label class="field"><span class="label">Description</span><textarea class="textarea" id="role-description"></textarea></label>'
+      + '<label class="row small" style="gap:6px;"><input type="checkbox" id="role-remote"/> Remote friendly</label>'
+      + '<label class="row small" style="gap:6px;"><input type="checkbox" id="role-visa"/> Sponsors visa</label>'
+      + '<div><div class="label">Required skills</div><div class="muted small">Click a skill to require it; click its weight tag to toggle High / Medium.</div>'
+      + '<div class="stack" id="roleFormSkillsGrid" style="margin-top:8px;">'+renderRoleFormSkillsGrid(grouped)+'</div></div>'
+      + '<div><button type="button" class="btn btn-primary" onclick="App.submitRoleForm()">Post role</button></div>'
+      + '</div>' })
+    + '</div>';
+}
+function renderRoleFormSkillsGrid(grouped){
+  return Object.keys(grouped).map(function(category){
+    return '<div><div class="small muted">'+esc(category)+'</div><div class="skill-tag-grid" style="margin-top:6px;">'+grouped[category].map(function(s){
+      var w = ui.roleFormSkills[s.id];
+      var sel = !!w;
+      return '<span class="skill-tag-pick '+(sel?'selected':'')+'" onclick="App.toggleRoleSkill('+s.id+')">'+esc(s.name)+(sel?'<span class="weight-tag" onclick="event.stopPropagation();App.cycleRoleSkillWeight('+s.id+')">'+w+'</span>':'')+'</span>';
+    }).join('')+'</div></div>';
+  }).join('');
+}
+
+/* =========================================================================
+   PAGE: Role manage (employer)
+   ========================================================================= */
+function matchesForRole(role){
+  var students = state.users.filter(function(u){ var p=studentProfile(u.id); return u.role==='student' && p && p.open_to_opportunities; });
+  var result = students.map(function(s){
+    var uni = s.university_id ? uniById(s.university_id) : null;
+    var p = studentProfile(s.id) || {};
+    var match = matchForStudent(s.id, role);
+    var applied = state.applications.some(function(a){ return a.role_id===role.id && a.student_user_id===s.id; });
+    var invited = state.roleInvites.some(function(ri){ return ri.role_id===role.id && ri.student_user_id===s.id; });
+    return { user_id:s.id, name:s.name, headline:p.headline||'', verified: !!p.verified, university: uni, match:match, applied:applied, invited:invited };
+  });
+  result.sort(function(a,b){ return b.match.score - a.match.score; });
+  return result;
+}
+function roleApplicationsShaped(role){
+  var apps = state.applications.filter(function(a){ return a.role_id===role.id; }).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); });
+  return apps.map(function(a){
+    var student = userById(a.student_user_id);
+    var p = studentProfile(student.id) || {};
+    var uni = student.university_id ? uniById(student.university_id) : null;
+    return { id:a.id, status:a.status, note:a.note, created_at:a.created_at, student: { user_id:student.id, name:student.name, headline:p.headline||'', verified: !!p.verified, university: uni, match: matchForStudent(student.id, role) } };
+  });
+}
+function pageEmployerRoleManage(user, roleId_){
+  var role = roleById(roleId_);
+  if(!role || role.company_id!==user.company_id) return '<div class="page">'+EmptyState('📌','Role not found','')+'</div>';
+  var tab = ui.tab.roleManage || 'pipeline';
+  var apps = roleApplicationsShaped(role);
+  var rejected = apps.filter(function(a){ return a.status==='rejected'; });
+  var STAGES = ['applied','shortlisted','interview','offer','hired'];
+  var STAGE_LABELS = { applied:'Applied', shortlisted:'Shortlisted', interview:'Interview', offer:'Offer', hired:'Hired' };
+  var NEXT_STAGE = { applied:'shortlisted', shortlisted:'interview', interview:'offer', offer:'hired' };
+
+  var body = '';
+  if(tab==='pipeline'){
+    var cols = STAGES.map(function(stage){
+      var inStage = apps.filter(function(a){ return a.status===stage; });
+      var cards = inStage.map(function(a){
+        var noteHtml = a.note ? '<div class="small" style="margin-top:6px;">&ldquo;'+esc(a.note)+'&rdquo;</div>' : '';
+        var actions = '';
+        if(NEXT_STAGE[a.status]) actions += '<button type="button" class="btn btn-primary btn-sm" onclick="App.changeApplicationStatus('+a.id+',\''+NEXT_STAGE[a.status]+'\')">Move to '+STAGE_LABELS[NEXT_STAGE[a.status]]+'</button>';
+        if(stage!=='hired') actions += '<button type="button" class="btn btn-danger btn-sm" onclick="App.changeApplicationStatus('+a.id+',\'rejected\')">Reject</button>';
+        return '<div class="kanban-card"><div class="row" style="gap:8px;">'+Avatar(a.student.name,32)+'<div><div><a href="#/profile/'+a.student.user_id+'"><strong>'+esc(a.student.name)+'</strong></a></div><div class="muted small">'+esc(a.student.university?a.student.university.name:'')+(a.student.university&&a.student.university.qs_rank?' #'+a.student.university.qs_rank:'')+'</div></div></div>'
+          + '<div class="row" style="gap:6px;margin-top:6px;">'+(a.student.verified?Badge('verified'):'')+MatchPill(a.student.match.score)+'</div>'
+          + noteHtml + '<div class="kanban-card-actions">'+actions+'</div></div>';
+      }).join('');
+      return '<div class="kanban-col"><div class="kanban-col-head"><strong>'+STAGE_LABELS[stage]+'</strong><span class="muted small">'+inStage.length+'</span></div>'+cards+'</div>';
+    }).join('');
+    var rejectedHtml = rejected.length===0 ? '' : Card({ title:'Rejected ('+rejected.length+')', body:'<div class="stack">'+rejected.map(function(a){ return '<div class="row-between"><div class="row" style="gap:8px;">'+Avatar(a.student.name,28)+'<a href="#/profile/'+a.student.user_id+'">'+esc(a.student.name)+'</a></div>'+MatchPill(a.student.match.score)+'</div>'; }).join('')+'</div>' });
+    body = '<div class="kanban">'+cols+'</div>'+rejectedHtml;
+  } else if(tab==='matched'){
+    var matches = matchesForRole(role);
+    body = matches.length===0 ? EmptyState('🎯','No matched talent','No opted-in students match this role yet.') : '<div class="stack">'+matches.map(function(m){
+      var overlap = m.match.overlap.map(function(s){ return SkillTag(s,'overlap'); }).join('');
+      var gaps = m.match.gaps.map(function(s){ return SkillTag(s,'gap'); }).join('');
+      return Card({ body: '<div class="row-between" style="align-items:flex-start;"><div class="row" style="gap:10px;align-items:flex-start;">'+Avatar(m.name,40)+'<div><div class="row" style="gap:6px;"><a href="#/profile/'+m.user_id+'"><strong>'+esc(m.name)+'</strong></a>'+(m.verified?Badge('verified'):'')+'</div><div class="muted small">'+esc(m.headline)+'</div><div class="muted small">'+esc(m.university?m.university.name:'')+(m.university&&m.university.qs_rank?' #'+m.university.qs_rank:'')+'</div><div class="row wrap" style="gap:6px;margin-top:6px;">'+overlap+gaps+'</div></div></div>'
+        + '<div class="stack" style="align-items:flex-end;">'+MatchPill(m.match.score)+(m.applied?Badge('neutral','Applied'):'')+'<button type="button" class="btn btn-ghost btn-sm" '+(m.invited?'disabled':'')+' onclick="App.inviteToRole('+role.id+','+m.user_id+')">'+(m.invited?'Invited':'Invite to apply')+'</button></div></div>' });
+    }).join('')+'</div>';
+  } else {
+    var reqSkills = requiredSkillsForRole(role.id);
+    body = Card({ title:'Role details', body:'<div class="stack">'
+      + '<div><strong>Sector:</strong> '+esc(role.sector)+'</div>'
+      + '<div><strong>Location:</strong> '+esc(role.location)+(role.remote?' (remote friendly)':'')+'</div>'
+      + '<div><strong>Pay:</strong> '+esc(role.paid||'Unpaid')+'</div>'
+      + '<div><strong>Visa sponsorship:</strong> '+(role.sponsors_visa?'Yes':'No')+'</div>'
+      + '<div><strong>Deadline:</strong> '+fmtDate(role.deadline)+'</div>'
+      + '<div><strong>Description</strong><p>'+esc(role.description)+'</p></div>'
+      + '<div><strong>Required skills</strong><div class="row wrap" style="gap:6px;margin-top:6px;">'+reqSkills.map(function(s){ return SkillTag(s.name, s.weight==='high'?'high':'medium'); }).join('')+'</div></div>'
+      + (role.status==='open' ? '<div><button type="button" class="btn btn-danger" onclick="App.closeRole('+role.id+')">Close role</button></div>' : '')
+      + '</div>' });
+  }
+  return '<div class="page"><div class="page-head"><div><h1>'+esc(role.title)+'</h1><div class="row small" style="gap:8px;"><span class="muted">'+role.type+' · '+esc(role.location)+'</span>'+Badge('status-'+role.status)+'</div></div></div>'
+    + TabBar([{id:'pipeline',label:'Pipeline',count:apps.length},{id:'matched',label:'Matched talent'},{id:'details',label:'Details'}], tab, 'roleManage')
+    + '<div style="margin-top:16px;">'+body+'</div></div>';
+}
+
+/* =========================================================================
+   UNIVERSITY: helpers
+   ========================================================================= */
+var LIVE_STATUSES = ['applied','shortlisted','interview','offer'];
+var STATUS_RANK = { hired:7, offer:6, interview:5, shortlisted:4, applied:3, rejected:2, withdrawn:1 };
+function universityStudents(uniId_){ return state.users.filter(function(u){ return u.role==='student' && u.university_id===uniId_; }); }
+function universityOverview(uniId_){
+  var students = universityStudents(uniId_);
+  var total = students.length;
+  var verifiedCount=0, withLive=0, placed=0, pendingApproval=0, requirementSatisfied=0;
+  students.forEach(function(s){
+    var p = studentProfile(s.id) || {};
+    if(p.verified) verifiedCount++;
+    if(p.placement_required_hours!=null && p.placement_satisfied) requirementSatisfied++;
+    var apps = state.applications.filter(function(a){ return a.student_user_id===s.id; });
+    if(apps.some(function(a){ return LIVE_STATUSES.indexOf(a.status)!==-1; })) withLive++;
+    if(apps.some(function(a){ return a.status==='offer'||a.status==='hired'; })) placed++;
+    pendingApproval += apps.filter(function(a){ return (a.status==='offer'||a.status==='hired') && !a.placement_approved; }).length;
+  });
+  return { students: total, verified_pct: total?Math.round((verifiedCount/total)*100):0, with_live_applications: withLive, placements_pending_approval: pendingApproval, placed: placed, requirement_satisfied: requirementSatisfied };
+}
+function universityVerificationsShaped(uniId_){
+  var claims = state.educationClaims.filter(function(c){ return c.university_id===uniId_ && c.status==='pending'; }).sort(function(a,b){ return a.created_at.localeCompare(b.created_at); });
+  return claims.map(function(c){ var s=userById(c.student_user_id); return { id:c.id, student:{ user_id:s.id, name:s.name }, course:c.course, start_year:c.start_year, end_year:c.end_year, created_at:c.created_at }; });
+}
+function universityEngagementShaped(uniId_){
+  var studentIds = universityStudents(uniId_).map(function(s){ return s.id; });
+  var byCompany = {};
+  state.applications.forEach(function(a){
+    if(studentIds.indexOf(a.student_user_id)===-1) return;
+    var role = roleById(a.role_id); if(!role) return;
+    var c = companyById(role.company_id); if(!c) return;
+    if(!byCompany[c.id]) byCompany[c.id] = { company_id:c.id, name:c.name, roleSet:{}, applications_from_cohort:0, hires:0 };
+    byCompany[c.id].roleSet[role.id]=1;
+    byCompany[c.id].applications_from_cohort++;
+    if(a.status==='hired') byCompany[c.id].hires++;
+  });
+  var rows = Object.values(byCompany).map(function(r){ return { company_id:r.company_id, name:r.name, roles_targeting:Object.keys(r.roleSet).length, applications_from_cohort:r.applications_from_cohort, hires:r.hires }; });
+  rows.sort(function(a,b){ return b.applications_from_cohort - a.applications_from_cohort; });
+  return rows;
+}
+function universityCohortShaped(uniId_){
+  return universityStudents(uniId_).map(function(s){
+    var p = studentProfile(s.id) || {};
+    var claim = state.educationClaims.filter(function(c){ return c.student_user_id===s.id; }).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); })[0];
+    var skillsCount = studentSkillIds(s.id).length;
+    var apps = state.applications.filter(function(a){ return a.student_user_id===s.id; });
+    var live = apps.filter(function(a){ return LIVE_STATUSES.indexOf(a.status)!==-1; }).length;
+    var bestStatus = null;
+    apps.forEach(function(a){ if(!bestStatus || STATUS_RANK[a.status]>STATUS_RANK[bestStatus]) bestStatus=a.status; });
+    return { user_id:s.id, name:s.name, course: claim?claim.course:null, end_year: claim?claim.end_year:null, verified: !!p.verified, skills_count:skillsCount,
+      applications: { total: apps.length, live:live, best_status:bestStatus }, placement_required_hours: p.placement_required_hours, placement_satisfied: !!p.placement_satisfied };
+  });
+}
+function universityPlacementsShaped(uniId_){
+  var rows = state.applications.filter(function(a){ var s=userById(a.student_user_id); return s.university_id===uniId_ && (a.status==='offer'||a.status==='hired'); })
+    .map(function(a){ var s=userById(a.student_user_id); var role=roleById(a.role_id); var c=companyById(role.company_id); return { application_id:a.id, status:a.status, placement_approved: !!a.placement_approved, student_name:s.name, role_title: role.title, company_name:c.name, updated_at:a.updated_at||a.created_at }; })
+    .sort(function(a,b){ return (b.updated_at||'').localeCompare(a.updated_at||''); });
+  return { pending: rows.filter(function(r){ return !r.placement_approved; }), approved: rows.filter(function(r){ return r.placement_approved; }) };
+}
+
+function pageUniversityDashboard(user){
+  var overview = universityOverview(user.university_id);
+  var verifications = universityVerificationsShaped(user.university_id);
+  var engagement = universityEngagementShaped(user.university_id);
+  var top = engagement.slice(0,3);
+  return '<div class="page"><div class="page-head"><h1>University dashboard</h1></div>'
+    + '<div class="grid-4">'+StatCard('Students', overview.students,'🎓')+StatCard('Verified', overview.verified_pct+'%','✅')+StatCard('Live applications', overview.with_live_applications,'📄')+StatCard('Pending placement sign-off', overview.placements_pending_approval,'⏳')+StatCard('Placed', overview.placed,'🏆')+StatCard('Requirement satisfied', overview.requirement_satisfied,'🎯')+'</div>'
+    + Card({ title:'Pending verifications', action:'<a href="#/university/verifications" class="btn btn-ghost btn-sm">View all</a>', body: verifications.length===0 ? EmptyState('✅','Nothing pending','All education claims are up to date.') : '<div class="stack">'+verifications.slice(0,3).map(function(v){ return '<div class="row-between"><div><strong>'+esc(v.student.name)+'</strong><div class="muted small">'+esc(v.course)+' · '+v.start_year+'–'+v.end_year+'</div></div><span class="muted small">'+fmtDate(v.created_at)+'</span></div>'; }).join('')+'</div>' })
+    + Card({ title:'Top employer engagement', action:'<a href="#/university/engagement" class="btn btn-ghost btn-sm">View all</a>', body: top.length===0 ? EmptyState('🤝','No engagement yet','Employer activity with your cohort will show here.') : '<div class="stack">'+top.map(function(e){ return '<div class="row-between"><a href="#/company-page/'+e.company_id+'">'+esc(e.name)+'</a><span class="muted small">'+e.applications_from_cohort+' applications · '+e.hires+' hires</span></div>'; }).join('')+'</div>' })
+    + '</div>';
+}
+function pageUniversityVerifications(user){
+  var claims = universityVerificationsShaped(user.university_id);
+  var body;
+  if(claims.length===0){ body = EmptyState('✅','Nothing pending','All education claims are up to date.'); }
+  else {
+    var rows = claims.map(function(c){ return '<tr><td>'+esc(c.student.name)+'</td><td>'+esc(c.course)+'</td><td>'+c.start_year+'–'+c.end_year+'</td><td>'+fmtDate(c.created_at)+'</td><td><div class="row" style="gap:6px;"><button type="button" class="btn btn-primary btn-sm" onclick="App.actOnVerification('+c.id+',\'approved\')">Approve</button><button type="button" class="btn btn-danger btn-sm" onclick="App.actOnVerification('+c.id+',\'rejected\')">Reject</button></div></td></tr>'; }).join('');
+    body = '<div class="table-wrap"><table class="table"><thead><tr><th>Student</th><th>Course</th><th>Years</th><th>Submitted</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+  return '<div class="page"><div class="page-head"><h1>Verification queue</h1></div>'+body+'</div>';
+}
+function pageUniversityCohort(user){
+  var students = universityCohortShaped(user.university_id);
+  var body;
+  if(students.length===0){ body = EmptyState('🎓','No students yet','Your cohort will appear here as students register.'); }
+  else {
+    var rows = students.map(function(s){
+      var appsCell = s.applications.total+' total'+(s.applications.live?', '+s.applications.live+' live':'')+(s.applications.best_status?' · '+Badge('status-'+s.applications.best_status):'');
+      var reqCell = s.placement_required_hours ? '<label class="row small" style="gap:6px;"><input type="checkbox" '+(s.placement_satisfied?'checked':'')+' onchange="App.toggleCohortSatisfied('+s.user_id+')"/> '+s.placement_required_hours+'h'+(s.placement_satisfied?' (satisfied)':'')+'</label>' : '<span class="muted small">N/A</span>';
+      return '<tr><td><a href="#/profile/'+s.user_id+'">'+esc(s.name)+'</a></td><td>'+esc(s.course||'')+'</td><td>'+(s.end_year||'')+'</td><td>'+(s.verified?Badge('verified'):'<span class="muted small">Unverified</span>')+'</td><td>'+s.skills_count+'</td><td>'+appsCell+'</td><td>'+reqCell+'</td></tr>';
+    }).join('');
+    body = '<div class="table-wrap"><table class="table"><thead><tr><th>Student</th><th>Course</th><th>End year</th><th>Verified</th><th>Skills</th><th>Applications</th><th>Placement requirement</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+  return '<div class="page"><div class="page-head"><h1>Cohort</h1></div>'+body+'</div>';
+}
+function pageUniversityPlacements(user){
+  var data = universityPlacementsShaped(user.university_id);
+  var pendingBody = data.pending.length===0 ? EmptyState('⏳','Nothing pending','Offers and hires needing sign-off will appear here.') : '<div class="stack">'+data.pending.map(function(p){ return '<div class="row-between"><div><strong>'+esc(p.student_name)+'</strong><div class="muted small">'+esc(p.role_title)+' · '+esc(p.company_name)+'</div></div><div class="row" style="gap:8px;">'+Badge('status-'+p.status)+'<button type="button" class="btn btn-primary btn-sm" onclick="App.approvePlacement('+p.application_id+')">Approve placement</button></div></div>'; }).join('')+'</div>';
+  var approvedBody = data.approved.length===0 ? EmptyState('🏆','No approved placements yet','Approved placements will appear here.') : '<div class="stack">'+data.approved.map(function(p){ return '<div class="row-between"><div><strong>'+esc(p.student_name)+'</strong><div class="muted small">'+esc(p.role_title)+' · '+esc(p.company_name)+'</div></div>'+Badge('status-'+p.status)+'</div>'; }).join('')+'</div>';
+  return '<div class="page"><div class="page-head"><h1>Placements</h1></div>'
+    + Card({ title:'Pending approval ('+data.pending.length+')', body: pendingBody })
+    + Card({ title:'Approved ('+data.approved.length+')', body: approvedBody })
+    + '</div>';
+}
+function pageUniversityEngagement(user){
+  var rows = universityEngagementShaped(user.university_id);
+  var body = rows.length===0 ? EmptyState('🤝','No engagement yet','Employer activity with your cohort will show here.')
+    : '<div class="table-wrap"><table class="table"><thead><tr><th>Employer</th><th>Roles targeting</th><th>Applications from cohort</th><th>Hires</th></tr></thead><tbody>'
+      + rows.map(function(r){ return '<tr><td><a href="#/company-page/'+r.company_id+'">'+esc(r.name)+'</a></td><td>'+r.roles_targeting+'</td><td>'+r.applications_from_cohort+'</td><td>'+r.hires+'</td></tr>'; }).join('')
+      + '</tbody></table></div>';
+  return '<div class="page"><div class="page-head"><h1>Employer engagement</h1></div>'+body+'</div>';
+}
+
+/* =========================================================================
+   ACTIONS
+   ========================================================================= */
+function signIn(userId){
+  session = { userId:userId };
+  saveSession();
+  var u = userById(userId);
+  var target = '#'+roleHome(u.role);
+  if(location.hash===target) renderApp(); else location.hash = target;
+}
+function signOut(){ session = { userId:null }; saveSession(); if(location.hash==='#/') renderApp(); else location.hash = '#/'; }
+function confirmResetDemo(){
+  openModal('Reset demo data', '<p>This restores every seed record (roles, applications, connections, posts, messages) to its original state and signs you out. This cannot be undone.</p>',
+    '<button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancel</button><button type="button" class="btn btn-danger" onclick="App.resetDemo()">Reset demo data</button>');
+}
+function openNotif(id){
+  var n = state.notifications.filter(function(x){ return x.id===id; })[0];
+  if(!n) return;
+  n.read = 1; saveState();
+  document.querySelectorAll('.dropdown').forEach(function(d){ d.classList.add('hidden'); });
+  if(n.link) goto('#'+n.link); else renderApp();
+}
+function markAllNotifsRead(){
+  var user = currentUser(); if(!user) return;
+  state.notifications.forEach(function(n){ if(n.user_id===user.id) n.read=1; });
+  saveState(); renderApp();
+}
+function setTabFor(ns, id){ ui.tab[ns] = id; renderApp(); }
+
+function toggleLike(postId){
+  var user = currentUser();
+  var existing = state.postLikes.filter(function(l){ return l.post_id===postId && l.user_id===user.id; })[0];
+  if(existing){ state.postLikes = state.postLikes.filter(function(l){ return l!==existing; }); }
+  else state.postLikes.push({ post_id:postId, user_id:user.id });
+  saveState(); renderApp();
+}
+function toggleComments(postId){
+  ui.openComments[postId] = !ui.openComments[postId];
+  var el = document.getElementById('comments-'+postId);
+  if(el) el.classList.toggle('hidden');
+}
+function submitComment(ev, postId){
+  ev.preventDefault();
+  var user = currentUser();
+  var input = document.getElementById('comment-input-'+postId);
+  var text = (input.value||'').trim();
+  if(!text) return false;
+  state.postComments.push({ id: nextSeq('comment'), post_id:postId, user_id:user.id, body:text, created_at: new Date().toISOString() });
+  ui.openComments[postId] = true;
+  saveState(); renderApp();
+  return false;
+}
+function submitPost(ev){
+  ev.preventDefault();
+  var user = currentUser();
+  var input = document.getElementById('postComposerInput');
+  var text = (input.value||'').trim();
+  if(!text) return false;
+  var orgType=null, orgId=null;
+  if(user.role==='employer'){ orgType='company'; orgId=user.company_id; }
+  else if(user.role==='university_admin'){ orgType='university'; orgId=user.university_id; }
+  state.posts.push({ id: nextSeq('post'), author_user_id:user.id, org_type:orgType, org_id:orgId, body:text, created_at: new Date().toISOString() });
+  saveState();
+  showToast('Posted to your feed');
+  renderApp();
+  return false;
+}
+function connectRequest(userId){
+  var user = currentUser();
+  if(connectionRowBetween(user.id, userId)){ showToast('Connection already exists','error'); return; }
+  state.connections.push({ id: nextSeq('connection'), requester_id:user.id, addressee_id:userId, status:'pending' });
+  notify(userId,'connection', user.name+' wants to connect with you','/network');
+  saveState();
+  showToast('Connection request sent');
+  renderApp();
+}
+function respondConnection(connId, status){
+  var conn = state.connections.filter(function(c){ return c.id===connId; })[0];
+  if(!conn) return;
+  conn.status = status;
+  if(status==='accepted'){ var user=currentUser(); notify(conn.requester_id,'connection', user.name+' accepted your connection request','/network'); }
+  saveState();
+  showToast(status==='accepted' ? 'Connection accepted' : 'Request declined');
+  renderApp();
+}
+function toggleFollow(orgType, orgId){
+  var user = currentUser();
+  if(isFollowing(user.id, orgType, orgId)){
+    state.follows = state.follows.filter(function(f){ return !(f.user_id===user.id && f.org_type===orgType && f.org_id===orgId); });
+    showToast('Unfollowed');
+  } else {
+    state.follows.push({ user_id:user.id, org_type:orgType, org_id:orgId });
+    showToast('Following');
+  }
+  saveState(); renderApp();
+}
+function toggleEventRegister(eventId){
+  var user = currentUser();
+  var ev = state.events.filter(function(e){ return e.id===eventId; })[0];
+  if(!ev) return;
+  var existing = state.eventRegistrations.filter(function(r){ return r.event_id===eventId && r.user_id===user.id; })[0];
+  if(existing){
+    state.eventRegistrations = state.eventRegistrations.filter(function(r){ return r!==existing; });
+    showToast('Registration cancelled');
+  } else {
+    if(ev.capacity!=null){
+      var count = state.eventRegistrations.filter(function(r){ return r.event_id===eventId; }).length;
+      if(count>=ev.capacity){ showToast('Event is at capacity','error'); return; }
+    }
+    state.eventRegistrations.push({ event_id:eventId, user_id:user.id });
+    showToast('You are registered');
+  }
+  saveState(); renderApp();
+}
+function openCreateEventModal(){ openModal('Create event', createEventModalBody(), createEventModalFooter()); }
+function submitCreateEvent(ev){
+  ev.preventDefault();
+  var user = currentUser();
+  var title = document.getElementById('ev-title').value.trim();
+  var date = document.getElementById('ev-date').value;
+  if(!title || !date){ showToast('Title and date are required','error'); return false; }
+  var description = document.getElementById('ev-desc').value.trim();
+  var format = document.getElementById('ev-format').value;
+  var location = document.getElementById('ev-location').value.trim();
+  var capacity = document.getElementById('ev-capacity').value;
+  var orgType = user.role==='employer' ? 'company' : 'university';
+  var orgId = user.role==='employer' ? user.company_id : user.university_id;
+  state.events.push({ id: nextSeq('event'), org_type:orgType, org_id:orgId, created_by_user_id:user.id, title:title, description:description, date: new Date(date).toISOString(), format: format||'virtual', location: location||null, capacity: capacity?Number(capacity):null });
+  saveState();
+  closeModal();
+  showToast('Event created');
+  renderApp();
+  return false;
+}
+function toggleExpandEvent(eventId){ ui.expandedEvent = ui.expandedEvent===eventId ? null : eventId; renderApp(); }
+
+function sendThreadMessage(ev, threadId){
+  ev.preventDefault();
+  var user = currentUser();
+  var input = document.getElementById('messageBodyInput');
+  var text = (input.value||'').trim();
+  if(!text) return false;
+  var thread = state.threads.filter(function(t){ return t.id===threadId; })[0];
+  if(!thread) return false;
+  state.messages.push({ id: nextSeq('message'), thread_id:threadId, sender_id:user.id, body:text, read:0, created_at: new Date().toISOString() });
+  var otherId = otherUserId(thread, user.id);
+  notify(otherId,'message','New message from '+user.name,'/messages');
+  saveState();
+  renderApp();
+  return false;
+}
+function openMessageModal(userId){
+  var user = currentUser();
+  if(!canMessage(user.id, userId)){ showToast('You are not permitted to message this user yet','error'); return; }
+  var target = userById(userId);
+  openModal('Message '+target.name, '<form id="profile-message-form" onsubmit="return App.submitProfileMessage(event,'+userId+')"><textarea class="textarea" id="profileMessageBody" rows="4" placeholder="Write your message…"></textarea></form>',
+    '<button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancel</button><button type="submit" form="profile-message-form" class="btn btn-primary">Send</button>');
+}
+function submitProfileMessage(ev, userId){
+  ev.preventDefault();
+  var user = currentUser();
+  var text = document.getElementById('profileMessageBody').value.trim();
+  if(!text) return false;
+  if(!canMessage(user.id, userId)){ showToast('Not permitted to message this user','error'); return false; }
+  var thread = state.threads.filter(function(t){ return (t.a_user_id===user.id&&t.b_user_id===userId)||(t.a_user_id===userId&&t.b_user_id===user.id); })[0];
+  if(!thread){ var id = nextSeq('thread'); thread = { id:id, a_user_id:user.id, b_user_id:userId }; state.threads.push(thread); }
+  state.messages.push({ id: nextSeq('message'), thread_id:thread.id, sender_id:user.id, body:text, read:0, created_at: new Date().toISOString() });
+  notify(userId,'message','New message from '+user.name,'/messages');
+  saveState();
+  closeModal();
+  goto('#/messages/'+thread.id);
+  return false;
+}
+
+function applyToRole(roleId){
+  var user = currentUser();
+  var role = roleById(roleId);
+  if(!role || role.status!=='open'){ showToast('Role is closed','error'); return; }
+  if(state.applications.some(function(a){ return a.role_id===roleId && a.student_user_id===user.id; })){ showToast('Already applied','error'); return; }
+  var note = (document.getElementById('applyNote')||{}).value || '';
+  var now = new Date().toISOString();
+  var appId = nextSeq('application');
+  state.applications.push({ id:appId, role_id:roleId, student_user_id:user.id, note:note, status:'applied', placement_approved:0, created_at:now, updated_at:now });
+  state.applicationEvents.push({ id: nextSeq('applicationEvent'), application_id:appId, status:'applied', created_at:now });
+  var company = companyById(role.company_id);
+  state.users.filter(function(u){ return u.company_id===role.company_id; }).forEach(function(u){ notify(u.id,'application', user.name+' applied for '+role.title, '/employer/roles'); });
+  saveState();
+  showToast('Application submitted');
+  renderApp();
+}
+function confirmWithdraw(appId){
+  openModal('Withdraw application?', '<p>This can&rsquo;t be undone. You&rsquo;ll need to re-apply if you change your mind.</p>',
+    '<button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancel</button><button type="button" class="btn btn-danger" onclick="App.withdrawApplication('+appId+')">Withdraw</button>');
+}
+function withdrawApplication(appId){
+  var app = state.applications.filter(function(a){ return a.id===appId; })[0];
+  if(!app) return;
+  var role = roleById(app.role_id);
+  app.status = 'withdrawn'; app.updated_at = new Date().toISOString();
+  state.applicationEvents.push({ id: nextSeq('applicationEvent'), application_id:appId, status:'withdrawn', created_at: new Date().toISOString() });
+  var student = userById(app.student_user_id);
+  state.users.filter(function(u){ return u.company_id===role.company_id; }).forEach(function(u){ notify(u.id,'application', student.name+' withdrew their application for '+role.title, '/employer/roles'); });
+  saveState();
+  closeModal();
+  showToast('Application withdrawn');
+  renderApp();
+}
+function closeRole(roleId){
+  var role = roleById(roleId);
+  if(!role) return;
+  role.status = 'closed';
+  saveState();
+  showToast('Role closed');
+  renderApp();
+}
+function inviteToRole(roleId, studentUserId){
+  if(state.roleInvites.some(function(ri){ return ri.role_id===roleId && ri.student_user_id===studentUserId; })){ showToast('Already invited','error'); return; }
+  var role = roleById(roleId);
+  var company = companyById(role.company_id);
+  state.roleInvites.push({ id: nextSeq('roleInvite'), role_id:roleId, student_user_id:studentUserId, created_at: new Date().toISOString() });
+  notify(studentUserId,'invite', company.name+' invited you to apply for '+role.title, '/student/roles');
+  saveState();
+  showToast('Invitation sent');
+  renderApp();
+}
+var EMPLOYER_TRANSITIONS = { applied:['shortlisted','rejected'], shortlisted:['interview','rejected'], interview:['offer','rejected'], offer:['hired','rejected'] };
+function changeApplicationStatus(appId, status){
+  var app = state.applications.filter(function(a){ return a.id===appId; })[0];
+  if(!app) return;
+  var allowed = EMPLOYER_TRANSITIONS[app.status] || [];
+  if(allowed.indexOf(status)===-1){ showToast('Cannot transition from '+app.status+' to '+status,'error'); return; }
+  app.status = status; app.updated_at = new Date().toISOString();
+  state.applicationEvents.push({ id: nextSeq('applicationEvent'), application_id:appId, status:status, created_at: new Date().toISOString() });
+  var role = roleById(app.role_id);
+  var student = userById(app.student_user_id);
+  var company = companyById(role.company_id);
+  notify(student.id,'application','Your application for '+role.title+' is now '+status,'/student/applications');
+  if(status==='offer' || status==='hired'){
+    state.users.filter(function(u){ return u.role==='university_admin' && u.university_id===student.university_id; }).forEach(function(u){ notify(u.id,'placement', student.name+"'s application for "+role.title+' at '+company.name+' needs placement sign-off','/university/placements'); });
+  }
+  saveState();
+  showToast(status==='rejected' ? 'Applicant rejected' : 'Moved to '+status);
+  renderApp();
+}
+
+function refreshRoleFormSkillsGrid(){
+  var grouped={}; state.skills.forEach(function(s){ (grouped[s.category]=grouped[s.category]||[]).push(s); });
+  var el = document.getElementById('roleFormSkillsGrid');
+  if(el) el.innerHTML = renderRoleFormSkillsGrid(grouped);
+}
+function toggleRoleSkill(skillId){
+  if(ui.roleFormSkills[skillId]) delete ui.roleFormSkills[skillId]; else ui.roleFormSkills[skillId]='medium';
+  refreshRoleFormSkillsGrid();
+}
+function cycleRoleSkillWeight(skillId){
+  ui.roleFormSkills[skillId] = ui.roleFormSkills[skillId]==='high' ? 'medium' : 'high';
+  refreshRoleFormSkillsGrid();
+}
+function submitRoleForm(){
+  var user = currentUser();
+  var title = document.getElementById('role-title').value.trim();
+  var type = document.getElementById('role-type').value;
+  var sector = document.getElementById('role-sector').value.trim();
+  var location = document.getElementById('role-location').value.trim();
+  var deadline = document.getElementById('role-deadline').value;
+  var paid = document.getElementById('role-paid').value.trim();
+  var description = document.getElementById('role-description').value.trim();
+  var remote = document.getElementById('role-remote').checked;
+  var visa = document.getElementById('role-visa').checked;
+  if(!title || !sector || !location || !description || !deadline){ showToast('Please fill in all required fields','error'); return; }
+  var id = nextSeq('role');
+  state.roles.push({ id:id, company_id:user.company_id, title:title, type:type, sector:sector, location:location, remote: remote?1:0, paid: paid||null, description:description, sponsors_visa: visa?1:0, deadline:deadline, status:'open', created_at: new Date().toISOString() });
+  Object.keys(ui.roleFormSkills).forEach(function(skillId){ state.roleSkills.push({ role_id:id, skill_id:Number(skillId), weight: ui.roleFormSkills[skillId] }); });
+  saveState();
+  showToast('Role posted');
+  goto('#/employer/roles/'+id);
+}
+function refreshBrowseRoles(){
+  var user = currentUser();
+  var el = document.getElementById('rolesResults');
+  if(el) el.innerHTML = renderRolesResults(user);
+}
+
+function toggleProfileSkill(skillId){
+  if(ui.profileFormSkills.has(skillId)) ui.profileFormSkills.delete(skillId); else ui.profileFormSkills.add(skillId);
+  var grouped={}; state.skills.forEach(function(s){ (grouped[s.category]=grouped[s.category]||[]).push(s); });
+  var el = document.getElementById('profileSkillsGrid');
+  if(el) el.innerHTML = renderProfileSkillsGrid(grouped);
+}
+function saveProfileBasics(){
+  var user = currentUser();
+  var p = studentProfile(user.id);
+  p.headline = document.getElementById('pf-headline').value;
+  p.about = document.getElementById('pf-about').value;
+  saveState();
+  showToast('Profile updated');
+  renderApp();
+}
+function saveProfileToggles(){
+  var user = currentUser();
+  var p = studentProfile(user.id);
+  p.interests_sectors = document.getElementById('pf-interests').value;
+  p.preferred_locations = document.getElementById('pf-locations').value;
+  p.work_rights = document.getElementById('pf-workrights').checked ? 1 : 0;
+  p.open_to_relocate = document.getElementById('pf-relocate').checked ? 1 : 0;
+  p.open_to_opportunities = document.getElementById('pf-opps').checked ? 1 : 0;
+  saveState();
+  showToast('Preferences updated');
+  renderApp();
+}
+function saveProfileSkills(){
+  var user = currentUser();
+  state.studentSkills = state.studentSkills.filter(function(s){ return s.student_user_id!==user.id; });
+  ui.profileFormSkills.forEach(function(skillId){ state.studentSkills.push({ student_user_id:user.id, skill_id:skillId }); });
+  ui.profileFormSkills = null;
+  saveState();
+  showToast('Skills updated');
+  renderApp();
+}
+function addExperience(){
+  var user = currentUser();
+  var title = document.getElementById('exp-title').value.trim();
+  var org = document.getElementById('exp-org').value.trim();
+  var start = document.getElementById('exp-start').value.trim();
+  var end = document.getElementById('exp-end').value.trim();
+  var desc = document.getElementById('exp-desc').value.trim();
+  if(!title || !org || !start){ showToast('Title, organisation and start date are required','error'); return; }
+  state.experienceEntries.push({ id: nextSeq('experience'), student_user_id:user.id, title:title, organisation:org, start_date:start, end_date: end||null, description:desc });
+  saveState();
+  showToast('Experience added');
+  renderApp();
+}
+function removeExperience(id){
+  var user = currentUser();
+  state.experienceEntries = state.experienceEntries.filter(function(e){ return !(e.id===id && e.student_user_id===user.id); });
+  saveState();
+  showToast('Experience removed');
+  renderApp();
+}
+function addEducationClaim(){
+  var user = currentUser();
+  var uniIdVal = document.getElementById('claim-uni').value;
+  var course = document.getElementById('claim-course').value.trim();
+  var startYear = document.getElementById('claim-start').value;
+  var endYear = document.getElementById('claim-end').value;
+  if(!uniIdVal || !course || !startYear || !endYear){ showToast('All education claim fields are required','error'); return; }
+  state.educationClaims.push({ id: nextSeq('claim'), student_user_id:user.id, university_id: Number(uniIdVal), course:course, start_year: Number(startYear), end_year: Number(endYear), status:'pending', created_at: new Date().toISOString() });
+  state.users.filter(function(u){ return u.role==='university_admin' && u.university_id===Number(uniIdVal); }).forEach(function(u){ notify(u.id,'verification', user.name+' requested verification for '+course, '/university/verifications'); });
+  saveState();
+  showToast('Education claim submitted for verification');
+  renderApp();
+}
+function actOnVerification(claimId, status){
+  var claim = state.educationClaims.filter(function(c){ return c.id===claimId; })[0];
+  if(!claim) return;
+  claim.status = status;
+  var uni = uniById(claim.university_id);
+  if(status==='approved'){
+    var p = studentProfile(claim.student_user_id);
+    if(p) p.verified = 1;
+    notify(claim.student_user_id,'verification','Your enrolment at '+uni.name+' has been verified','/student/profile');
+  } else {
+    notify(claim.student_user_id,'verification','Your verification request for '+claim.course+' was declined','/student/profile');
+  }
+  saveState();
+  showToast(status==='approved' ? 'Claim approved' : 'Claim rejected');
+  renderApp();
+}
+function toggleCohortSatisfied(userId){
+  var p = studentProfile(userId);
+  if(!p) return;
+  p.placement_satisfied = p.placement_satisfied ? 0 : 1;
+  saveState();
+  showToast('Placement status updated');
+  renderApp();
+}
+function approvePlacement(appId){
+  var app = state.applications.filter(function(a){ return a.id===appId; })[0];
+  if(!app) return;
+  if(['offer','hired'].indexOf(app.status)===-1){ showToast('Application must be in offer or hired status','error'); return; }
+  app.placement_approved = 1;
+  var student = userById(app.student_user_id);
+  var p = studentProfile(student.id);
+  if(p && p.placement_required_hours!=null) p.placement_satisfied = 1;
+  var role = roleById(app.role_id);
+  var company = companyById(role.company_id);
+  notify(student.id,'placement','Your placement at '+company.name+' ('+role.title+') has been approved by your university','/student/applications');
+  state.users.filter(function(u){ return u.company_id===role.company_id; }).forEach(function(u){ notify(u.id,'placement', student.name+"'s placement for "+role.title+' has been approved by their university','/employer/roles'); });
+  saveState();
+  showToast('Placement approved');
+  renderApp();
+}
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+window.App = {
+  goto: goto, signIn: signIn, signOut: signOut, confirmResetDemo: confirmResetDemo, resetDemo: resetDemo,
+  toggleDropdown: toggleDropdown, openNotif: openNotif, markAllNotifsRead: markAllNotifsRead, setTabFor: setTabFor,
+  closeModal: closeModal, toggleLike: toggleLike, toggleComments: toggleComments, submitComment: submitComment, submitPost: submitPost,
+  connectRequest: connectRequest, respondConnection: respondConnection, toggleFollow: toggleFollow, toggleEventRegister: toggleEventRegister,
+  openCreateEventModal: openCreateEventModal, submitCreateEvent: submitCreateEvent, toggleExpandEvent: toggleExpandEvent,
+  sendThreadMessage: sendThreadMessage, openMessageModal: openMessageModal, submitProfileMessage: submitProfileMessage,
+  applyToRole: applyToRole, confirmWithdraw: confirmWithdraw, withdrawApplication: withdrawApplication, closeRole: closeRole,
+  inviteToRole: inviteToRole, changeApplicationStatus: changeApplicationStatus, toggleRoleSkill: toggleRoleSkill, cycleRoleSkillWeight: cycleRoleSkillWeight,
+  submitRoleForm: submitRoleForm, refreshBrowseRoles: refreshBrowseRoles, toggleProfileSkill: toggleProfileSkill,
+  saveProfileBasics: saveProfileBasics, saveProfileToggles: saveProfileToggles, saveProfileSkills: saveProfileSkills,
+  addExperience: addExperience, removeExperience: removeExperience, addEducationClaim: addEducationClaim,
+  actOnVerification: actOnVerification, toggleCohortSatisfied: toggleCohortSatisfied, approvePlacement: approvePlacement
+};
+
+loadSession();
+loadState();
+window.addEventListener('hashchange', renderApp);
+renderApp();
+
+</script>
+</body>
+</html>
