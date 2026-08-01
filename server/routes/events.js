@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, requireAuth, requireRole } = require('../lib/helpers');
+const { db, requireAuth, requireRole, logActivity } = require('../lib/helpers');
 const { eventShape } = require('../lib/shapes');
 
 const router = express.Router();
@@ -41,6 +41,7 @@ router.post('/events/:id/register', requireAuth, requireRole('student'), (req, r
   }
 
   db.prepare('INSERT INTO event_registrations (event_id, user_id) VALUES (?,?)').run(event.id, req.user.id);
+  logActivity(req.user.id, 'event_registration');
   res.json(eventShape(event, req.user.id));
 });
 

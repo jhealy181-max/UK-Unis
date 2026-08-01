@@ -35,6 +35,7 @@ app.use('/api', require('./routes/feed'));
 app.use('/api', require('./routes/messaging'));
 app.use('/api', require('./routes/events'));
 app.use('/api', require('./routes/university'));
+app.use('/api', require('./routes/insights'));
 app.use('/api', require('./routes/notifications'));
 app.use('/api', require('./routes/admin'));
 app.use('/api', require('./routes/dev'));

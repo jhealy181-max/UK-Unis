@@ -1,10 +1,15 @@
 const express = require('express');
-const { db, requireAuth, requireRole, matchForStudent, requiredSkillsForRole, notify, toBindable } = require('../lib/helpers');
+const {
+  db, requireAuth, requireRole, matchForStudent, requiredSkillsForRole, notify, toBindable,
+  reputationPercentile, futureProofForStudent,
+} = require('../lib/helpers');
 
 const router = express.Router();
 
 function roleCard(role, viewerUser) {
-  const company = db.prepare('SELECT id, name FROM companies WHERE id = ?').get(role.company_id);
+  const companyRow = db.prepare('SELECT id, name FROM companies WHERE id = ?').get(role.company_id);
+  // F2: reputation_percentile nested on the company sub-object.
+  const company = companyRow ? { ...companyRow, reputation_percentile: reputationPercentile(role.company_id) } : null;
   const card = {
     id: role.id,
     company_id: role.company_id,
@@ -160,6 +165,8 @@ router.get('/roles/:id/matches', requireAuth, requireRole('employer'), (req, res
       match,
       applied,
       invited,
+      // F1/F3: future-proof score for candidate comparison board.
+      future_proof_score: futureProofForStudent(s.user_id).score,
     };
   });
   result.sort((a, b) => b.match.score - a.match.score);

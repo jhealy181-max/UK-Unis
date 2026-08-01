@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, requireAuth, requireRole, notify } = require('../lib/helpers');
+const { db, requireAuth, requireRole, notify, logActivity } = require('../lib/helpers');
 
 const router = express.Router();
 
@@ -60,6 +60,7 @@ router.post('/connections', requireAuth, requireRole('student'), (req, res) => {
     INSERT INTO connections (requester_id, addressee_id, status) VALUES (?,?,'pending')
   `).run(req.user.id, target.id);
   notify(target.id, 'connection', `${req.user.name} wants to connect with you`, '/network');
+  logActivity(req.user.id, 'connect_request');
   res.json(db.prepare('SELECT * FROM connections WHERE id = ?').get(r.lastInsertRowid));
 });
 
@@ -102,6 +103,7 @@ router.patch('/connections/:id', requireAuth, (req, res) => {
   db.prepare('UPDATE connections SET status = ? WHERE id = ?').run(status, conn.id);
   if (status === 'accepted') {
     notify(conn.requester_id, 'connection', `${req.user.name} accepted your connection request`, '/network');
+    logActivity(req.user.id, 'accept');
   }
   res.json(db.prepare('SELECT * FROM connections WHERE id = ?').get(conn.id));
 });

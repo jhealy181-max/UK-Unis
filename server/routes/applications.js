@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, requireAuth, requireRole, notify, matchForStudent } = require('../lib/helpers');
+const { db, requireAuth, requireRole, notify, matchForStudent, logActivity, futureProofForStudent } = require('../lib/helpers');
 
 const router = express.Router();
 
@@ -30,6 +30,7 @@ router.post('/applications', requireAuth, requireRole('student'), (req, res) => 
   for (const e of employerUsers) {
     notify(e.id, 'application', `${req.user.name} applied for ${role.title}`, '/employer/roles');
   }
+  logActivity(req.user.id, 'apply');
 
   res.json(db.prepare('SELECT * FROM applications WHERE id = ?').get(r.lastInsertRowid));
 });
@@ -46,6 +47,11 @@ router.get('/my/applications', requireAuth, requireRole('student'), (req, res) =
 
   const result = apps.map(a => {
     const timeline = db.prepare('SELECT status, created_at FROM application_events WHERE application_id = ? ORDER BY created_at ASC, id ASC').all(a.id);
+    // F5: best interview-practice score for this role, powers the
+    // "Interview-ready" badge on the application card.
+    const bestScore = db.prepare(
+      'SELECT MAX(score) best FROM interview_attempts WHERE user_id = ? AND role_id = ?'
+    ).get(req.user.id, a.role_id);
     return {
       id: a.id,
       role: { id: a.role_id, title: a.role_title, company_name: a.company_name },
@@ -54,6 +60,7 @@ router.get('/my/applications', requireAuth, requireRole('student'), (req, res) =
       note: a.note,
       timeline,
       created_at: a.created_at,
+      interview_best_score: bestScore && bestScore.best != null ? bestScore.best : null,
     };
   });
   res.json(result);
@@ -83,6 +90,8 @@ router.get('/roles/:id/applications', requireAuth, requireRole('employer'), (req
         verified: !!profile.verified,
         university,
         match: matchForStudent(student.id, role),
+        // F1/F3: future-proof score for the candidate comparison board.
+        future_proof_score: futureProofForStudent(student.id).score,
       },
     };
   });
@@ -157,6 +166,20 @@ router.post('/applications/:id/approve-placement', requireAuth, requireRole('uni
   const employerUsers = db.prepare('SELECT id FROM users WHERE company_id = ?').all(role.company_id);
   for (const e of employerUsers) {
     notify(e.id, 'placement', `${student.name}'s placement for ${role.title} has been approved by their university`, '/employer/roles');
+  }
+
+  // F4: alumni outcomes spotlight — auto-post to the feed as the university
+  // org, unless the university has opted out.
+  const uni = db.prepare('SELECT * FROM universities WHERE id = ?').get(student.university_id);
+  if (uni && !uni.spotlight_optout) {
+    const claim = db.prepare(`
+      SELECT course FROM education_claims
+      WHERE student_user_id = ? AND university_id = ?
+      ORDER BY (status = 'approved') DESC, created_at DESC LIMIT 1
+    `).get(student.id, uni.id);
+    const body = `🎉 ${student.name} (${uni.name}${claim ? ', ' + claim.course : ''}) has been placed at ${company.name} as ${role.title}.`;
+    db.prepare('INSERT INTO posts (author_user_id, org_type, org_id, body) VALUES (?,?,?,?)')
+      .run(req.user.id, 'university', uni.id, body);
   }
 
   res.json(db.prepare('SELECT * FROM applications WHERE id = ?').get(app.id));

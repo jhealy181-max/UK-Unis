@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, requireAuth, requireRole } = require('../lib/helpers');
+const { db, requireAuth, requireRole, logActivity } = require('../lib/helpers');
 const { postShape } = require('../lib/shapes');
 
 const router = express.Router();
@@ -44,6 +44,7 @@ router.post('/posts', requireAuth, (req, res) => {
 
   const r = db.prepare('INSERT INTO posts (author_user_id, org_type, org_id, body) VALUES (?,?,?,?)')
     .run(req.user.id, orgType, orgId, body);
+  logActivity(req.user.id, 'post');
   res.json(postShape(db.prepare('SELECT * FROM posts WHERE id = ?').get(r.lastInsertRowid), req.user.id));
 });
 
@@ -68,6 +69,7 @@ router.post('/posts/:id/comments', requireAuth, (req, res) => {
   if (!body || !body.trim()) return res.status(400).json({ error: 'body is required' });
 
   db.prepare('INSERT INTO post_comments (post_id, user_id, body) VALUES (?,?,?)').run(post.id, req.user.id, body);
+  logActivity(req.user.id, 'comment');
   res.json(postShape(post, req.user.id));
 });
 

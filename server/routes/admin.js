@@ -45,6 +45,10 @@ router.get('/admin/stats', (req, res) => {
   const latest_signups = db.prepare(
     'SELECT name, role, created_at FROM users ORDER BY created_at DESC, id DESC LIMIT 5'
   ).all();
+  // F9: "Reports generated" counter for the admin dashboard.
+  const reports_generated = db.prepare(
+    "SELECT COUNT(*) n FROM activity_log WHERE activity_type = 'report_generated'"
+  ).get().n;
 
   res.json({
     users,
@@ -56,6 +60,7 @@ router.get('/admin/stats', (req, res) => {
     posts,
     events,
     latest_signups,
+    reports_generated,
   });
 });
 

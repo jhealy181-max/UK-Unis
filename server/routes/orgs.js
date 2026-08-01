@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, requireAuth, requireRole, toBindable } = require('../lib/helpers');
+const { db, requireAuth, requireRole, toBindable, reputationPercentile } = require('../lib/helpers');
 const { postShape, eventShape } = require('../lib/shapes');
 
 const router = express.Router();
@@ -21,8 +21,15 @@ router.get('/universities/:id', requireAuth, (req, res) => {
   const studentCount = db.prepare(
     "SELECT COUNT(*) n FROM users WHERE role = 'student' AND university_id = ?"
   ).get(uni.id).n;
+  // F10: "Subject strengths" panel — this university's own subject_outcomes rows.
+  const subjectOutcomes = db.prepare(
+    'SELECT subject, subject_rank, top_sectors, median_days_to_offer FROM subject_outcomes WHERE university_id = ? ORDER BY subject_rank ASC'
+  ).all(uni.id).map(r => ({ ...r, top_sectors: r.top_sectors.split(',').map(s => s.trim()).filter(Boolean) }));
 
-  res.json({ ...uni, followers, is_following: isFollowing, posts, events, student_count: studentCount });
+  res.json({
+    ...uni, followers, is_following: isFollowing, posts, events, student_count: studentCount,
+    subject_outcomes: subjectOutcomes,
+  });
 });
 
 router.get('/companies/:id', requireAuth, (req, res) => {
@@ -43,7 +50,11 @@ router.get('/companies/:id', requireAuth, (req, res) => {
     "SELECT * FROM events WHERE org_type = 'company' AND org_id = ? ORDER BY date ASC"
   ).all(company.id).map(e => eventShape(e, req.user.id));
 
-  res.json({ ...company, followers, is_following: isFollowing, open_roles: openRoles, posts, events });
+  res.json({
+    ...company, followers, is_following: isFollowing, open_roles: openRoles, posts, events,
+    // F2: percentile (0-100, higher = better) of employer_reputation among same-sector peers.
+    reputation_percentile: reputationPercentile(company.id),
+  });
 });
 
 router.patch('/companies/:id', requireAuth, requireRole('employer'), (req, res) => {

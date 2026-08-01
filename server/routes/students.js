@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, requireAuth, requireRole, notify, canMessage, toBindable } = require('../lib/helpers');
+const { db, requireAuth, requireRole, notify, canMessage, toBindable, logActivity } = require('../lib/helpers');
 
 const router = express.Router();
 
@@ -59,6 +59,7 @@ router.patch('/me/profile', requireAuth, requireRole('student'), (req, res) => {
   if (keys.length) {
     const setClause = keys.map(k => `${k} = ?`).join(', ');
     db.prepare(`UPDATE student_profiles SET ${setClause} WHERE user_id = ?`).run(...keys.map(k => updates[k]), req.user.id);
+    logActivity(req.user.id, 'profile_edit');
   }
   res.json(db.prepare('SELECT * FROM student_profiles WHERE user_id = ?').get(req.user.id));
 });
