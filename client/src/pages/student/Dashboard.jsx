@@ -7,18 +7,62 @@ import StatCard from '../../components/StatCard.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import MatchPill from '../../components/MatchPill.jsx';
 import SkillTag from '../../components/SkillTag.jsx';
+import SkillDot, { useSkillExposureMap } from '../../components/SkillDot.jsx';
+import ScoreDial from '../../components/ScoreDial.jsx';
+import MomentumCard from '../../components/MomentumCard.jsx';
+import { useToast } from '../../components/Toast.jsx';
 
 function fmtDate(x) {
   return new Date(x).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function FutureProofCard({ data }) {
+  if (data === null) {
+    return (
+      <Card title="Future-proof score">
+        <div className="muted small">Loading…</div>
+      </Card>
+    );
+  }
+  if (!data) return null;
+  const suggested = data.suggested_skills || [];
+  return (
+    <Card title="Future-proof score">
+      <div className="row" style={{ gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <ScoreDial score={data.score} label="out of 100" />
+        <div className="stack" style={{ flex: 1, minWidth: 180 }}>
+          <div className="label">Skills to add next</div>
+          {suggested.length === 0 ? (
+            <div className="muted small">No suggestions right now — your skill set already covers the highest-demand AI-augmented skills.</div>
+          ) : (
+            <div className="stack" style={{ gap: 8 }}>
+              {suggested.slice(0, 3).map((s) => (
+                <div key={s.id}>
+                  <div className="row" style={{ gap: 6 }}>
+                    <strong>{s.name}</strong>
+                    <SkillDot exposure="augmented" />
+                  </div>
+                  {s.reason && <div className="muted small">{s.reason}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
+  const toast = useToast();
   const [applications, setApplications] = useState(null);
   const [connections, setConnections] = useState(null);
   const [roles, setRoles] = useState(null);
   const [events, setEvents] = useState(null);
+  const [futureProof, setFutureProof] = useState(null);
   const [error, setError] = useState('');
+  const exposureByName = useSkillExposureMap();
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +84,15 @@ export default function Dashboard() {
       }
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/me/future-proof')
+      .then((d) => { if (!cancelled) setFutureProof(d); })
+      .catch((e) => { if (!cancelled) { setFutureProof(false); toast(e.message, 'error'); } });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!user) return null;
@@ -82,6 +135,11 @@ export default function Dashboard() {
       </Card>
 
       <div className="grid-2">
+        <FutureProofCard data={futureProof} />
+        <MomentumCard />
+      </div>
+
+      <div className="grid-2">
         <Card title="Recommended roles" action={<Link to="/student/roles" className="btn btn-ghost btn-sm">Browse all</Link>}>
           {topRoles.length === 0 ? (
             <EmptyState icon="🎯" title="No roles yet" text="Check back soon for new opportunities." />
@@ -98,7 +156,12 @@ export default function Dashboard() {
                     <div><strong>{r.title}</strong></div>
                     <div className="muted small">{r.company.name} · {r.location}</div>
                     {r.match && r.match.gaps && r.match.gaps.length > 0 && (
-                      <SkillTag name={`Add: ${r.match.gaps.slice(0, 3).join(', ')}`} variant="gap" />
+                      <div className="row" style={{ gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <SkillTag name={`Add: ${r.match.gaps.slice(0, 3).join(', ')}`} variant="gap" />
+                        {r.match.gaps.slice(0, 1).map((g) => (
+                          <SkillDot key={g} exposure={exposureByName[g.toLowerCase()]} />
+                        ))}
+                      </div>
                     )}
                   </div>
                   {r.match && <MatchPill score={r.match.score} />}

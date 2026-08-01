@@ -21,6 +21,10 @@ import BrowseRoles from './pages/student/BrowseRoles.jsx';
 import RoleDetail from './pages/student/RoleDetail.jsx';
 import StudentApplications from './pages/student/Applications.jsx';
 import StudentEditProfile from './pages/student/EditProfile.jsx';
+import InterviewCoach from './pages/student/InterviewCoach.jsx';
+import Pathways from './pages/student/Pathways.jsx';
+
+import Benchmark from './pages/Benchmark.jsx';
 
 import EmployerDashboard from './pages/employer/Dashboard.jsx';
 import EmployerRoles from './pages/employer/Roles.jsx';
@@ -35,6 +39,8 @@ import Placements from './pages/university/Placements.jsx';
 import Engagement from './pages/university/Engagement.jsx';
 import UniversityEvents from './pages/university/UniversityEvents.jsx';
 import SkillsGap from './pages/university/SkillsGap.jsx';
+import AIReadiness from './pages/university/AIReadiness.jsx';
+import OutcomesReport from './pages/university/OutcomesReport.jsx';
 
 import CompanyProfile from './pages/employer/CompanyProfile.jsx';
 
@@ -90,6 +96,14 @@ function RequireRole({ role, children }) {
   return <AppShell>{children}</AppShell>;
 }
 
+function RequireAnyRole({ roles, children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  if (!user) return <Navigate to="/" replace />;
+  if (!roles.includes(normalizedRole(user.role))) return <Navigate to={roleHome(user.role)} replace />;
+  return <AppShell>{children}</AppShell>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -117,6 +131,11 @@ export default function App() {
             <Route path="/student/roles/:id" element={<RequireRole role="student"><RoleDetail /></RequireRole>} />
             <Route path="/student/applications" element={<RequireRole role="student"><StudentApplications /></RequireRole>} />
             <Route path="/student/profile" element={<RequireRole role="student"><StudentEditProfile /></RequireRole>} />
+            <Route path="/student/interview" element={<RequireRole role="student"><InterviewCoach /></RequireRole>} />
+            <Route path="/student/pathways" element={<RequireRole role="student"><Pathways /></RequireRole>} />
+
+            {/* shared benchmark explorer (student + university_admin) */}
+            <Route path="/benchmark" element={<RequireAnyRole roles={['student', 'university']}><Benchmark /></RequireAnyRole>} />
 
             {/* employer portal */}
             <Route path="/employer" element={<RequireRole role="employer"><EmployerDashboard /></RequireRole>} />
@@ -134,6 +153,8 @@ export default function App() {
             <Route path="/university/engagement" element={<RequireRole role="university"><Engagement /></RequireRole>} />
             <Route path="/university/events" element={<RequireRole role="university"><UniversityEvents /></RequireRole>} />
             <Route path="/university/skills-gap" element={<RequireRole role="university"><SkillsGap /></RequireRole>} />
+            <Route path="/university/ai-readiness" element={<RequireRole role="university"><AIReadiness /></RequireRole>} />
+            <Route path="/university/report" element={<RequireRole role="university"><OutcomesReport /></RequireRole>} />
 
             {/* admin portal */}
             <Route path="/admin" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />

@@ -9,6 +9,7 @@ import Badge from '../../components/Badge.jsx';
 import MatchPill from '../../components/MatchPill.jsx';
 import SkillTag from '../../components/SkillTag.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
+import CompareModal from '../../components/CompareModal.jsx';
 
 function fmtDate(x) {
   return new Date(x).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -29,6 +30,53 @@ export default function RoleManage() {
   const [busyId, setBusyId] = useState(null);
   const [inviting, setInviting] = useState(null);
   const [expandedNote, setExpandedNote] = useState(null);
+
+  // F3: candidate comparison board — selections keyed so pipeline and
+  // matched-talent rows can be mixed, capped at 4.
+  const [compareItems, setCompareItems] = useState([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const MAX_COMPARE = 4;
+
+  const toCompareItem = (source, raw) => {
+    if (source === 'pipeline') {
+      return {
+        key: `pipeline-${raw.id}`,
+        name: raw.student?.name,
+        verified: !!raw.student?.verified,
+        university: raw.student?.university || null,
+        match_score: raw.student?.match?.score ?? null,
+        overlap: raw.student?.match?.overlap || [],
+        gaps: raw.student?.match?.gaps || [],
+        stage: raw.status || null,
+        future_proof_score: raw.student?.future_proof_score ?? null,
+      };
+    }
+    return {
+      key: `matched-${raw.user_id}`,
+      name: raw.name,
+      verified: !!raw.verified,
+      university: raw.university || null,
+      match_score: raw.match?.score ?? null,
+      overlap: raw.match?.overlap || [],
+      gaps: raw.match?.gaps || [],
+      stage: null,
+      future_proof_score: raw.future_proof_score ?? null,
+    };
+  };
+
+  const isCompared = (key) => compareItems.some((c) => c.key === key);
+  const toggleCompare = (source, raw) => {
+    const item = toCompareItem(source, raw);
+    setCompareItems((prev) => {
+      if (prev.some((c) => c.key === item.key)) return prev.filter((c) => c.key !== item.key);
+      if (prev.length >= MAX_COMPARE) {
+        toast(`You can compare up to ${MAX_COMPARE} candidates at a time`, 'error');
+        return prev;
+      }
+      return [...prev, item];
+    });
+  };
+  const removeCompare = (key) => setCompareItems((prev) => prev.filter((c) => c.key !== key));
 
   const loadRole = async () => setRole(await api.get(`/roles/${id}`));
   const loadApplications = async () => setApplications(await api.get(`/roles/${id}/applications`));
@@ -127,6 +175,13 @@ export default function RoleManage() {
                 {applications.filter((a) => a.status === stage).map((a) => (
                   <div key={a.id} className="kanban-card">
                     <div className="row" style={{ gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Compare ${a.student.name}`}
+                        checked={isCompared(`pipeline-${a.id}`)}
+                        disabled={!isCompared(`pipeline-${a.id}`) && compareItems.length >= MAX_COMPARE}
+                        onChange={() => toggleCompare('pipeline', a)}
+                      />
                       <Avatar name={a.student.name} size={32} />
                       <div>
                         <div><Link to={`/profile/${a.student.user_id}`}><strong>{a.student.name}</strong></Link></div>
@@ -196,6 +251,14 @@ export default function RoleManage() {
               <Card key={m.user_id}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Compare ${m.name}`}
+                      checked={isCompared(`matched-${m.user_id}`)}
+                      disabled={!isCompared(`matched-${m.user_id}`) && compareItems.length >= MAX_COMPARE}
+                      onChange={() => toggleCompare('matched', m)}
+                      style={{ marginTop: 4 }}
+                    />
                     <Avatar name={m.name} />
                     <div>
                       <div className="row" style={{ gap: 6 }}>
@@ -248,6 +311,24 @@ export default function RoleManage() {
           </div>
         </Card>
       )}
+
+      {compareItems.length > 0 && (
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 40, boxShadow: '0 10px 30px rgba(12,28,60,0.3)' }}
+          onClick={() => setCompareOpen(true)}
+        >
+          Compare ({compareItems.length})
+        </button>
+      )}
+
+      <CompareModal
+        open={compareOpen}
+        onClose={() => setCompareOpen(false)}
+        items={compareItems}
+        onRemove={removeCompare}
+      />
     </div>
   );
 }

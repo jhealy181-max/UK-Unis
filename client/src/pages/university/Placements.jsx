@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../api.js';
+import { useAuth } from '../../AuthContext.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import Card from '../../components/Card.jsx';
 import Badge from '../../components/Badge.jsx';
@@ -7,8 +8,11 @@ import EmptyState from '../../components/EmptyState.jsx';
 
 export default function Placements() {
   const toast = useToast();
+  const { user, refresh } = useAuth();
   const [data, setData] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [celebrate, setCelebrate] = useState(true);
+  const [savingSetting, setSavingSetting] = useState(false);
 
   const load = async () => {
     try {
@@ -19,6 +23,28 @@ export default function Placements() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // F4: current spotlight_optout comes from /me (university profile row);
+  // spotlight_optout is inverted from the "celebrate" toggle and defaults
+  // to 0 (celebrate on) server-side, so null/undefined also means "on".
+  useEffect(() => {
+    setCelebrate(!user?.profile?.spotlight_optout);
+  }, [user]);
+
+  const toggleCelebrate = async () => {
+    const next = !celebrate;
+    setSavingSetting(true);
+    try {
+      await api.patch('/university/settings', { spotlight_optout: next ? 0 : 1 });
+      setCelebrate(next);
+      toast(next ? 'Placements will be celebrated in the feed' : 'Placement spotlight posts turned off');
+      await refresh();
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      setSavingSetting(false);
+    }
+  };
 
   const approve = async (applicationId) => {
     setBusyId(applicationId);
@@ -37,7 +63,18 @@ export default function Placements() {
 
   return (
     <div className="page">
-      <div className="page-head"><h1>Placements</h1></div>
+      <div className="page-head">
+        <h1>Placements</h1>
+        <label className="row small" style={{ gap: 8, cursor: savingSetting ? 'wait' : 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={celebrate}
+            disabled={savingSetting}
+            onChange={toggleCelebrate}
+          />
+          Celebrate placements in feed
+        </label>
+      </div>
 
       <Card title={`Pending approval (${data.pending.length})`}>
         {data.pending.length === 0 ? (

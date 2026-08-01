@@ -8,6 +8,7 @@ import Card from '../components/Card.jsx';
 import SkillTag from '../components/SkillTag.jsx';
 import Modal from '../components/Modal.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import SkillDot from '../components/SkillDot.jsx';
 
 function fmtDate(x) {
   return new Date(x).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -118,7 +119,10 @@ export default function StudentProfile() {
           {(!profile.skills || profile.skills.length === 0) && <div className="muted small">No skills added yet.</div>}
           <div className="skill-tag-grid">
             {(profile.skills || []).map((s) => (
-              <SkillTag key={s.id} name={s.name} />
+              <span key={s.id} className="row" style={{ gap: 0 }}>
+                <SkillTag name={s.name} />
+                <SkillDot skill={s} />
+              </span>
             ))}
           </div>
         </Card>

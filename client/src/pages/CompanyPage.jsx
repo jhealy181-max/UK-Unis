@@ -6,6 +6,7 @@ import { useToast } from '../components/Toast.jsx';
 import Avatar from '../components/Avatar.jsx';
 import Card from '../components/Card.jsx';
 import Badge from '../components/Badge.jsx';
+import ReputationBadge from '../components/ReputationBadge.jsx';
 import PostCard from '../components/PostCard.jsx';
 import PostComposer from '../components/PostComposer.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -56,7 +57,13 @@ export default function CompanyPage() {
               <h1 style={{ marginBottom: 4 }}>{org.name}</h1>
               <div className="small muted">{Array.isArray(org.sectors) ? org.sectors.join(", ") : (org.sectors || "")}</div>
               <div className="small muted">{org.followers} followers</div>
-              <Badge kind="neutral">QS Employer Reputation participant</Badge>
+              <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                <Badge kind="neutral">QS Employer Reputation participant</Badge>
+                <ReputationBadge
+                  percentile={org.reputation_percentile}
+                  sector={Array.isArray(org.sectors) ? org.sectors[0] : org.sectors}
+                />
+              </div>
             </div>
           </div>
           {!isOwner && (

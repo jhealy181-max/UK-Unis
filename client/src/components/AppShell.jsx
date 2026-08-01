@@ -113,6 +113,38 @@ const Icon = {
       <path d="M4 21h16M9 9h1M14 9h1M9 13h1M14 13h1M9 21v-5h6v5" strokeLinecap="round" />
     </svg>
   ),
+  interview: (p) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M21 15a2 2 0 01-2 2H9l-4 4v-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v9z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 9h.01M12 9h.01M16 9h.01" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  pathways: (p) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <circle cx="5" cy="6" r="2" /><circle cx="12" cy="18" r="2" /><circle cx="19" cy="6" r="2" />
+      <path d="M6.6 7.3L11 16M17.4 7.3L13 16" strokeLinecap="round" />
+    </svg>
+  ),
+  compare: (p) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M8 3v18M16 3v18" strokeLinecap="round" />
+      <path d="M4 8h4M4 14h4M16 8h4M16 14h4" strokeLinecap="round" />
+    </svg>
+  ),
+  aiReadiness: (p) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3" strokeLinecap="round" />
+    </svg>
+  ),
+  report: (p) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M7 3h7l4 4v14H7z" strokeLinejoin="round" />
+      <path d="M10 13v4M13 11v6M16 15v2" strokeLinecap="round" />
+    </svg>
+  ),
 };
 
 function roleHome(role) {
@@ -130,6 +162,9 @@ function navItemsFor(user) {
       { to: '/student', label: 'Dashboard', icon: Icon.home, end: true },
       { to: '/student/roles', label: 'Browse roles', icon: Icon.roles },
       { to: '/student/applications', label: 'Applications', icon: Icon.applications },
+      { to: '/student/interview', label: 'Interview coach', icon: Icon.interview },
+      { to: '/student/pathways', label: 'Pathways', icon: Icon.pathways },
+      { to: '/benchmark', label: 'Compare universities', icon: Icon.compare },
       { to: '/network', label: 'Network', icon: Icon.network },
       { to: '/messages', label: 'Messages', icon: Icon.messages },
       { to: '/events', label: 'Events', icon: Icon.events },
@@ -163,6 +198,9 @@ function navItemsFor(user) {
     { to: '/university/placements', label: 'Placements', icon: Icon.placements },
     { to: '/university/engagement', label: 'Engagement', icon: Icon.engagement },
     { to: '/university/skills-gap', label: 'Skills gap', icon: Icon.skillsGap },
+    { to: '/university/ai-readiness', label: 'AI readiness', icon: Icon.aiReadiness },
+    { to: '/university/report', label: 'Outcomes report', icon: Icon.report },
+    { to: '/benchmark', label: 'Compare universities', icon: Icon.compare },
     { to: '/university/events', label: 'Events', icon: Icon.events },
     { to: '/messages', label: 'Messages', icon: Icon.messages },
     user.university ? { to: `/university-page/${user.university.id}`, label: 'University page', icon: Icon.profile } : null,

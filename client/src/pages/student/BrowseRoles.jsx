@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import Card from '../../components/Card.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import MatchPill from '../../components/MatchPill.jsx';
 import SkillTag from '../../components/SkillTag.jsx';
 import Badge from '../../components/Badge.jsx';
+import SkillDot, { useSkillExposureMap } from '../../components/SkillDot.jsx';
 
 function fmtDate(x) {
   return new Date(x).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -13,16 +14,26 @@ function fmtDate(x) {
 
 export default function BrowseRoles() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [roles, setRoles] = useState(null);
   const [sectors, setSectors] = useState([]);
   const [locations, setLocations] = useState([]);
   const [search, setSearch] = useState('');
   const [type, setType] = useState('');
-  const [sector, setSector] = useState('');
+  // sector is driven by the URL (?sector=) so links like /student/roles?sector=Finance
+  // — e.g. Pathways "See open roles" — pre-filter the list, and stay in sync if the
+  // user navigates here again with a different sector while already on this page.
+  const sector = searchParams.get('sector') || '';
+  const setSector = (value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('sector', value); else next.delete('sector');
+    setSearchParams(next, { replace: true });
+  };
   const [location, setLocation] = useState('');
   const [remote, setRemote] = useState(false);
   const [sponsorsVisa, setSponsorsVisa] = useState(false);
   const [error, setError] = useState('');
+  const exposureByName = useSkillExposureMap();
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -100,9 +111,19 @@ export default function BrowseRoles() {
                     <Link to={`/company-page/${r.company.id}`} onClick={(e) => e.stopPropagation()}>{r.company.name}</Link>
                     {' · '}{r.type} · {r.location}{r.remote ? ' · Remote' : ''}
                   </div>
-                  <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                    {(r.match?.overlap || []).map((s) => <SkillTag key={`o-${s}`} name={s} variant="overlap" />)}
-                    {(r.match?.gaps || []).map((s) => <SkillTag key={`g-${s}`} name={s} variant="gap" />)}
+                  <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 6, alignItems: 'center' }}>
+                    {(r.match?.overlap || []).map((s) => (
+                      <span key={`o-${s}`} className="row" style={{ gap: 0 }}>
+                        <SkillTag name={s} variant="overlap" />
+                        <SkillDot exposure={exposureByName[s.toLowerCase()]} />
+                      </span>
+                    ))}
+                    {(r.match?.gaps || []).map((s) => (
+                      <span key={`g-${s}`} className="row" style={{ gap: 0 }}>
+                        <SkillTag name={s} variant="gap" />
+                        <SkillDot exposure={exposureByName[s.toLowerCase()]} />
+                      </span>
+                    ))}
                   </div>
                   <div className="muted small">Deadline {fmtDate(r.deadline)}</div>
                 </div>

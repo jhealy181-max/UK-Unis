@@ -4,6 +4,7 @@ import { api } from '../../api.js';
 import { useToast } from '../../components/Toast.jsx';
 import Card from '../../components/Card.jsx';
 import Badge from '../../components/Badge.jsx';
+import SkillDot, { SkillDotLegend } from '../../components/SkillDot.jsx';
 
 export default function EditProfile() {
   const { user, refresh } = useAuth();
@@ -199,19 +200,23 @@ export default function EditProfile() {
           {Object.keys(grouped).length === 0 ? (
             <div className="muted small">Loading skills…</div>
           ) : (
-            Object.entries(grouped).map(([category, list]) => (
-              <div key={category}>
-                <div className="label">{category}</div>
-                <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
-                  {list.map((s) => (
-                    <label key={s.id} className="row small" style={{ gap: 4 }}>
-                      <input type="checkbox" checked={selectedSkills.has(s.id)} onChange={() => toggleSkill(s.id)} />
-                      {s.name}
-                    </label>
-                  ))}
+            <>
+              <SkillDotLegend />
+              {Object.entries(grouped).map(([category, list]) => (
+                <div key={category}>
+                  <div className="label">{category}</div>
+                  <div className="row" style={{ flexWrap: 'wrap', gap: 10 }}>
+                    {list.map((s) => (
+                      <label key={s.id} className="row small" style={{ gap: 4 }}>
+                        <input type="checkbox" checked={selectedSkills.has(s.id)} onChange={() => toggleSkill(s.id)} />
+                        {s.name}
+                        <SkillDot skill={s} />
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </>
           )}
           <div><button className="btn btn-primary btn-sm" disabled={savingSkills} onClick={saveSkills}>Save skills</button></div>
         </div>
