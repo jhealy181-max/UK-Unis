@@ -9,7 +9,7 @@ import ScoreDial from '../../components/ScoreDial.jsx';
 // Base categories from the interview question bank (Technical, Data, Business,
 // Soft/behavioural) — used for the "pick a category" chip flow. Role-based
 // selection derives categories from the role's required skills server-side.
-const CATEGORIES = ['Technical', 'Data', 'Business', 'Soft/behavioural'];
+const CATEGORIES = ['Technical', 'Data', 'Business', 'Soft', 'Consulting', 'Finance', 'Engineering', 'Media'];
 
 function fmtDate(x) {
   return new Date(x).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });

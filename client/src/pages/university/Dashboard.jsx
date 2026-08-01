@@ -36,7 +36,8 @@ export default function Dashboard() {
 
   if (!overview || !verifications || !engagement) return <div className="page"><div className="muted">Loading…</div></div>;
 
-  const topEngagement = [...engagement]
+  const engagementRows = Array.isArray(engagement) ? engagement : (engagement.companies || []);
+  const topEngagement = [...engagementRows]
     .sort((a, b) => (b.applications_from_cohort || 0) - (a.applications_from_cohort || 0))
     .slice(0, 3);
 

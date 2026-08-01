@@ -84,3 +84,45 @@ Permission `can_message(a,b)`: accepted connection; OR employer↔student where 
 - `GET /notifications` → latest 30 `[{id,type,message,link,read,created_at}]`
 - `POST /notifications/read` → mark all read
 - `POST /dev/reset` — requires header `x-demo-reset: true`; wipes + re-seeds. Public (demo tool).
+
+## Iteration 3 (F1–F10)
+Schema version `'3'` (same delete+reseed migration pattern as v2). New tables: `subject_outcomes`, `interview_attempts`, `activity_log`. New columns: `skills.ai_exposure`/`skills.exposure_score` (F1, seeded per DATA-SOURCES.md — Anthropic Economic Index + Felten/Raj/Seamans AIOE, see `db.js` seed comment), `companies.employer_reputation` (F2, 55-95 spread, null = not QS-survey-participant), `universities.spotlight_optout` (F4). Static data files: `server/data/interview-bank.json` (48 questions × 8 categories: Technical, Data, Business, Soft, Consulting, Finance, Engineering, Media), `server/data/peer-benchmarks.json` (illustrative medians by QS rank band, F9). All new endpoints are additive; existing shapes only gained fields except `GET /university/engagement`, which the contract explicitly asked to "extend" (see F8 below).
+
+### F1 — AI exposure & future-proof score
+- `GET /skills` now returns `ai_exposure:'augmented'|'at_risk'|'human_core'` and `exposure_score:0-100` per skill.
+- `GET /me/future-proof` (student) → `{score, breakdown:[{skill,ai_exposure,exposure_score}], suggested_skills:[{id,name,reason}]}`. `score = 100 − weighted-avg(exposure_score)` over held skills, weights augmented×0.5, human_core×0.7, at_risk×1.3, clamped 0-100. `suggested_skills` = top 3 'augmented' skills the student lacks, ranked by open-role demand.
+- `future_proof_score` (same per-student score) added to `GET /roles/:id/matches` rows and `GET /roles/:id/applications` rows (F3 support).
+
+### F2 — Employer reputation percentile
+- `GET /companies/:id` gains `reputation_percentile` (0-100, higher = better standing among same-sector peers by `employer_reputation`; falls back to all companies if <3 same-sector peers; null if the company has no `employer_reputation`).
+- Role cards (`GET /roles`, `GET /roles/:id`) gain `company.reputation_percentile` (same computation, for the role's company).
+
+### F4 — Alumni outcomes spotlight
+- `POST /applications/:id/approve-placement` now also auto-inserts a feed post authored by the university org — `"🎉 {name} ({university}, {course}) has been placed at {company} as {role title}."` — unless `universities.spotlight_optout = 1`.
+- `PATCH /university/settings` — `{spotlight_optout: 0|1}` → updated university row.
+
+### F5 — AI interview coach
+- `GET /interview/questions?role_id=|category=` (student) → `{role:{id,title}|null, categories:[...], questions:[{id,category,question,star_expected}]}`. `role_id` derives categories from the role's required-skill categories plus a sector-flavour category (Consulting/Finance/Engineering/Media) when the role's sector matches one. Deterministic selection (lowest-id first per category, padded from `Soft`), always 5 questions.
+- `POST /interview/attempts` (student) — `{role_id?, category?, answers:[{question_id, text}]}` → `{id, score, per_question:[{question_id,score,feedback}], readiness_label}`. Deterministic scoring: 60% keyword overlap + 40% STAR heuristic (cue-word coverage for situation/action/result averaged with a 40-250-word length score). `readiness_label`: ≥80 'Interview-ready', ≥60 'Developing', else 'Needs practice'. Logs `activity_log` type `interview_attempt`.
+- `GET /interview/attempts` (student, mine) → `[{id, role:{id,title}|null, category, score, per_question, readiness_label, created_at}]`.
+- `GET /my/applications` rows gain `interview_best_score` (max score for that role, null if none) — powers the "Interview-ready" badge.
+
+### F6 — Cohort AI-readiness radar (university)
+- `GET /university/ai-readiness` → `{cohort_size, pct_with_3plus_augmented, avg_future_proof, by_exposure:[{ai_exposure,demand,students_with,coverage_pct}], close_first:[{skill,reason}]}`. `demand` from open non-hidden roles' required skills, grouped by `ai_exposure` instead of individual skill (mirrors `/university/skills-gap`'s query style). `close_first` = top 3 lowest-coverage/highest-demand 'augmented' skills.
+
+### F7 — QS outcomes benchmarking explorer
+- `GET /benchmark/universities` (any authenticated role) → per approved university `{id, name, qs_rank, employer_reputation, employment_outcomes, students, verified_pct, placements, avg_days_to_offer}`. `avg_days_to_offer` = avg(days between each application's first 'applied' and first 'offer' event), null if no such pairs exist for that university (null-safe).
+
+### F8 — Career momentum streaks & milestones
+- New `activity_log(id, user_id, activity_type, created_at)`. Logged on: `POST /applications` (`apply`), `POST /connections` (`connect_request`), `PATCH /connections/:id` accept (`accept`), `POST /posts` (`post`), `POST /posts/:id/comments` (`comment`), `PATCH /me/profile` (`profile_edit`), `POST /interview/attempts` (`interview_attempt`), `POST /events/:id/register` (`event_registration`), `GET /university/report` (`report_generated`).
+- `GET /me/momentum` (student) → `{week_count, streak_weeks, milestones:[{key,label,achieved,achieved_at}]}`. `week_count`/`streak_weeks` computed from fixed 7-day UTC buckets anchored at the Unix epoch. Milestones: `first_application`, `five_applications`, `first_connection`, `profile_75`, `verified`, `first_interview_practice`, `first_offer` (each with a best-effort `achieved_at` timestamp).
+- `GET /university/engagement` shape **extended** (contract explicitly calls this out) from a bare array to `{companies:[...same rows as before...], active_this_week_pct}` — % of the university's cohort with any `activity_log` row in the last 7 days.
+
+### F9 — Auto-generated outcomes report (university)
+- `GET /university/report` → `{university, generated_at, overview, placements, engagement, skills_gap, ai_readiness, placement_rate, avg_days_to_offer, peer_benchmark}` — composes the existing overview/placements/engagement/skills-gap aggregates plus F6's ai-readiness, blended with a static peer benchmark band (`server/data/peer-benchmarks.json`, by QS rank ≤100/≤300/≤1000) as `peer_benchmark:{rank_band, median_*, delta_*}` (deltas = this university minus the band median; `delta_avg_days_to_offer` null-safe). Logs `activity_log` type `report_generated`.
+- `GET /admin/stats` (qs_admin) gains `reports_generated` — count of `report_generated` activity_log rows.
+
+### F10 — Subject-level career pathways
+- New `subject_outcomes(id, university_id, subject, subject_rank, top_sectors, median_days_to_offer)`, seeded for Computer Science / Business & Management / Engineering / Data Science × all 11 universities.
+- `GET /pathways?subject=` (any authenticated role) → `{subjects:[...4 subjects...], subject, universities:[{university_id, university_name, qs_rank, subject_rank, median_days_to_offer, top_sectors:[{sector, open_roles}]}]}`, sorted by `subject_rank`. Defaults to the first subject if `subject` is omitted/unknown.
+- `GET /universities/:id` gains `subject_outcomes:[{subject, subject_rank, top_sectors:[...], median_days_to_offer}]` — that university's own rows, powers the "Subject strengths" panel.
