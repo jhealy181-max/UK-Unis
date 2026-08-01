@@ -106,6 +106,108 @@ function matchForStudent(studentUserId, roleRow) {
 }
 
 // ---------------------------------------------------------------------------
+// F8: activity log (career momentum)
+// ---------------------------------------------------------------------------
+
+const insActivity = db.prepare('INSERT INTO activity_log (user_id, activity_type) VALUES (?,?)');
+
+function logActivity(userId, activityType) {
+  insActivity.run(userId, activityType);
+}
+
+// ---------------------------------------------------------------------------
+// F1: AI exposure / future-proof skill score
+// ---------------------------------------------------------------------------
+
+// Weighting per ITERATION-3.md F1: augmented skills count less against you
+// (AI mostly assists), at_risk skills count more (AI mostly replaces), and
+// human_core sits in between.
+const FUTURE_PROOF_WEIGHTS = { augmented: 0.5, human_core: 0.7, at_risk: 1.3 };
+
+function futureProofForStudent(userId) {
+  const heldSkills = db.prepare(`
+    SELECT s.id, s.name, s.ai_exposure, s.exposure_score
+    FROM student_skills ss JOIN skills s ON s.id = ss.skill_id
+    WHERE ss.student_user_id = ?
+    ORDER BY s.category ASC, s.name ASC
+  `).all(userId);
+
+  let weightedSum = 0;
+  let weightSum = 0;
+  for (const s of heldSkills) {
+    const w = FUTURE_PROOF_WEIGHTS[s.ai_exposure] ?? 1;
+    weightedSum += s.exposure_score * w;
+    weightSum += w;
+  }
+  const avgExposure = weightSum ? weightedSum / weightSum : 0;
+  const score = Math.max(0, Math.min(100, Math.round(100 - avgExposure)));
+
+  const breakdown = heldSkills.map(s => ({
+    skill: s.name,
+    ai_exposure: s.ai_exposure,
+    exposure_score: s.exposure_score,
+  }));
+
+  return { score, breakdown };
+}
+
+function suggestedFutureProofSkills(userId, limit = 3) {
+  const heldIds = new Set(
+    db.prepare('SELECT skill_id FROM student_skills WHERE student_user_id = ?').all(userId).map(r => r.skill_id)
+  );
+  const rows = db.prepare(`
+    SELECT s.id, s.name, COUNT(*) n
+    FROM role_skills rs
+    JOIN roles r ON r.id = rs.role_id
+    JOIN skills s ON s.id = rs.skill_id
+    WHERE r.status = 'open' AND r.hidden = 0 AND s.ai_exposure = 'augmented'
+    GROUP BY s.id
+    ORDER BY n DESC, s.name ASC
+  `).all();
+
+  return rows
+    .filter(r => !heldIds.has(r.id))
+    .slice(0, limit)
+    .map(r => ({
+      id: r.id,
+      name: r.name,
+      reason: `Appears in ${r.n} open role${r.n === 1 ? '' : 's'} and is an 'augmented' AI skill — worth building alongside AI tools rather than avoiding.`,
+    }));
+}
+
+// ---------------------------------------------------------------------------
+// F2: employer reputation percentile
+// ---------------------------------------------------------------------------
+
+function sectorsList(s) {
+  return (s || '').split(',').map(x => x.trim()).filter(Boolean);
+}
+
+// Percentile rank (0-100, higher = better standing) of a company's
+// employer_reputation among same-sector peers; falls back to all companies
+// if fewer than 3 same-sector peers exist. Null if the company has no
+// reputation value or there's no meaningful comparison group.
+function reputationPercentile(companyId) {
+  const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(companyId);
+  if (!company || company.employer_reputation == null) return null;
+
+  const mySectors = new Set(sectorsList(company.sectors).map(s => s.toLowerCase()));
+  const all = db.prepare('SELECT id, employer_reputation, sectors FROM companies WHERE employer_reputation IS NOT NULL').all();
+
+  let peers = all.filter(c => c.id !== company.id && sectorsList(c.sectors).some(s => mySectors.has(s.toLowerCase())));
+  if (peers.length < 3) {
+    peers = all.filter(c => c.id !== company.id);
+  }
+
+  const group = [...peers, company];
+  const n = group.length;
+  if (n <= 1) return null;
+
+  const countBelow = group.filter(c => c.employer_reputation < company.employer_reputation).length;
+  return Math.round((countBelow / (n - 1)) * 100);
+}
+
+// ---------------------------------------------------------------------------
 // Messaging permission
 // ---------------------------------------------------------------------------
 
@@ -245,4 +347,8 @@ module.exports = {
   matchForStudent,
   canMessage,
   meShape,
+  logActivity,
+  futureProofForStudent,
+  suggestedFutureProofSkills,
+  reputationPercentile,
 };

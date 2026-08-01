@@ -16,7 +16,9 @@ router.get('/companies', (req, res) => {
 });
 
 router.get('/skills', (req, res) => {
-  const rows = db.prepare('SELECT id, name, category FROM skills ORDER BY category ASC, name ASC').all();
+  // F1: ai_exposure ('augmented'|'at_risk'|'human_core') + exposure_score
+  // (0-100, higher = more exposed to automation) — see db.js seed comment.
+  const rows = db.prepare('SELECT id, name, category, ai_exposure, exposure_score FROM skills ORDER BY category ASC, name ASC').all();
   res.json(rows);
 });
 
