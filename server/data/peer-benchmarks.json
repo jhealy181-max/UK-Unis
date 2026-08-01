@@ -1,0 +1,8 @@
+{
+  "_source": "Illustrative static peer-benchmark figures for the QS Connect prototype (F9 outcomes report). Not sourced from a live QS dataset — hand-set plausible medians by QS World University Ranking band, documented in ITERATION-3.md F9 as a static seed file. A production build would replace this with real QS survey/outcomes medians.",
+  "bands": [
+    { "rank_band": "top_100", "max_rank": 100, "median_verified_pct": 82, "median_placement_rate": 68, "median_avg_days_to_offer": 21 },
+    { "rank_band": "top_300", "max_rank": 300, "median_verified_pct": 74, "median_placement_rate": 55, "median_avg_days_to_offer": 28 },
+    { "rank_band": "top_1000", "max_rank": 1000, "median_verified_pct": 63, "median_placement_rate": 41, "median_avg_days_to_offer": 35 }
+  ]
+}

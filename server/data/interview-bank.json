@@ -1,0 +1,57 @@
+[
+  { "id": 1, "category": "Technical", "question": "Walk us through how you would debug a production issue with limited information.", "star_expected": true, "keywords": ["debug", "logs", "reproduce", "root cause", "monitoring"] },
+  { "id": 2, "category": "Technical", "question": "Describe your approach to writing clean, maintainable code.", "star_expected": false, "keywords": ["readability", "testing", "documentation", "refactor", "standards"] },
+  { "id": 3, "category": "Technical", "question": "Tell me about a time you had to learn a new technology quickly to deliver a project.", "star_expected": true, "keywords": ["learn", "research", "documentation", "deadline", "deliver"] },
+  { "id": 4, "category": "Technical", "question": "How would you design a scalable system to handle a sudden spike in traffic?", "star_expected": false, "keywords": ["scalability", "load balancing", "caching", "architecture", "performance"] },
+  { "id": 5, "category": "Technical", "question": "Describe a bug you introduced and how you resolved it.", "star_expected": true, "keywords": ["bug", "tested", "fixed", "root cause", "reviewed"] },
+  { "id": 6, "category": "Technical", "question": "What version control practices do you follow when working in a team?", "star_expected": false, "keywords": ["git", "branching", "pull request", "commit", "review"] },
+
+  { "id": 7, "category": "Data", "question": "Tell me about a time you used data to influence a decision.", "star_expected": true, "keywords": ["data", "analysis", "insight", "decision", "impact"] },
+  { "id": 8, "category": "Data", "question": "How would you clean a messy dataset before analysis?", "star_expected": false, "keywords": ["missing values", "outliers", "validation", "cleaning", "consistency"] },
+  { "id": 9, "category": "Data", "question": "Describe a project where you built a predictive model.", "star_expected": true, "keywords": ["model", "features", "accuracy", "validation", "results"] },
+  { "id": 10, "category": "Data", "question": "How do you decide which visualization to use for a given dataset?", "star_expected": false, "keywords": ["chart", "audience", "trend", "comparison", "clarity"] },
+  { "id": 11, "category": "Data", "question": "Tell me about a time your analysis was wrong. What happened?", "star_expected": true, "keywords": ["error", "assumption", "corrected", "learned", "impact"] },
+  { "id": 12, "category": "Data", "question": "Explain statistical significance to a non-technical stakeholder.", "star_expected": false, "keywords": ["significance", "confidence", "sample", "probability", "explain"] },
+
+  { "id": 13, "category": "Business", "question": "Tell me about a time you managed competing priorities on a project.", "star_expected": true, "keywords": ["priorities", "deadline", "stakeholders", "planning", "delivered"] },
+  { "id": 14, "category": "Business", "question": "How would you approach a market entry analysis for a new product?", "star_expected": false, "keywords": ["market", "competitors", "segmentation", "research", "strategy"] },
+  { "id": 15, "category": "Business", "question": "Describe a time you persuaded a stakeholder to change their mind.", "star_expected": true, "keywords": ["persuade", "stakeholder", "evidence", "negotiation", "outcome"] },
+  { "id": 16, "category": "Business", "question": "How do you prioritise tasks when everything feels urgent?", "star_expected": false, "keywords": ["prioritise", "urgent", "impact", "deadline", "plan"] },
+  { "id": 17, "category": "Business", "question": "Tell me about a time you identified a process inefficiency and fixed it.", "star_expected": true, "keywords": ["process", "efficiency", "improved", "implemented", "result"] },
+  { "id": 18, "category": "Business", "question": "Walk me through how you would build a business case for a new initiative.", "star_expected": false, "keywords": ["business case", "cost", "benefit", "roi", "stakeholders"] },
+
+  { "id": 19, "category": "Soft", "question": "Tell me about a time you worked in a difficult team environment.", "star_expected": true, "keywords": ["team", "conflict", "communication", "resolved", "collaboration"] },
+  { "id": 20, "category": "Soft", "question": "Describe a situation where you had to adapt to sudden change.", "star_expected": true, "keywords": ["adapt", "change", "flexible", "adjusted", "outcome"] },
+  { "id": 21, "category": "Soft", "question": "Tell me about a time you took the lead on a project without being asked.", "star_expected": true, "keywords": ["lead", "initiative", "responsibility", "organised", "result"] },
+  { "id": 22, "category": "Soft", "question": "How do you handle receiving critical feedback?", "star_expected": false, "keywords": ["feedback", "listen", "improve", "reflect", "growth"] },
+  { "id": 23, "category": "Soft", "question": "Describe a time you had to make a decision with incomplete information.", "star_expected": true, "keywords": ["decision", "uncertainty", "judgement", "risk", "outcome"] },
+  { "id": 24, "category": "Soft", "question": "Tell me about your greatest achievement so far and why it matters to you.", "star_expected": true, "keywords": ["achievement", "effort", "result", "proud", "impact"] },
+
+  { "id": 25, "category": "Consulting", "question": "How would you structure your analysis of a client's declining profitability?", "star_expected": false, "keywords": ["framework", "revenue", "cost", "structure", "analysis"] },
+  { "id": 26, "category": "Consulting", "question": "Tell me about a time you presented a recommendation a client didn't like.", "star_expected": true, "keywords": ["client", "recommendation", "pushback", "evidence", "outcome"] },
+  { "id": 27, "category": "Consulting", "question": "Estimate the number of coffee shops in London.", "star_expected": false, "keywords": ["estimate", "assumption", "population", "calculation", "logic"] },
+  { "id": 28, "category": "Consulting", "question": "Describe a time you worked to a tight deadline on a client deliverable.", "star_expected": true, "keywords": ["deadline", "client", "deliverable", "prioritise", "delivered"] },
+  { "id": 29, "category": "Consulting", "question": "How would you approach a case where the client's data is incomplete?", "star_expected": false, "keywords": ["data", "assumption", "gap", "estimate", "approach"] },
+  { "id": 30, "category": "Consulting", "question": "Tell me about a time you had to manage a difficult client relationship.", "star_expected": true, "keywords": ["client", "relationship", "difficult", "communication", "resolved"] },
+
+  { "id": 31, "category": "Finance", "question": "Walk me through a discounted cash flow valuation.", "star_expected": false, "keywords": ["dcf", "cash flow", "discount rate", "valuation", "terminal value"] },
+  { "id": 32, "category": "Finance", "question": "Tell me about a time you found an error in a financial model.", "star_expected": true, "keywords": ["model", "error", "checked", "corrected", "accuracy"] },
+  { "id": 33, "category": "Finance", "question": "How would you value a company with negative earnings?", "star_expected": false, "keywords": ["valuation", "earnings", "multiples", "comparable", "approach"] },
+  { "id": 34, "category": "Finance", "question": "Describe a time you had to explain a complex financial concept to someone non-technical.", "star_expected": true, "keywords": ["explain", "financial", "simplify", "communication", "understood"] },
+  { "id": 35, "category": "Finance", "question": "What recent market event do you think will have the biggest impact on markets, and why?", "star_expected": false, "keywords": ["market", "impact", "analysis", "reasoning", "current"] },
+  { "id": 36, "category": "Finance", "question": "Tell me about a time you worked under pressure to meet a reporting deadline.", "star_expected": true, "keywords": ["pressure", "deadline", "reporting", "accuracy", "delivered"] },
+
+  { "id": 37, "category": "Engineering", "question": "Describe a time you identified a design flaw before it caused a problem.", "star_expected": true, "keywords": ["design", "flaw", "identified", "corrected", "prevented"] },
+  { "id": 38, "category": "Engineering", "question": "How do you approach trade-offs between cost, safety, and performance in a design?", "star_expected": false, "keywords": ["trade-off", "cost", "safety", "performance", "design"] },
+  { "id": 39, "category": "Engineering", "question": "Tell me about a time a project didn't go to plan. What did you do?", "star_expected": true, "keywords": ["project", "plan", "problem", "adapted", "result"] },
+  { "id": 40, "category": "Engineering", "question": "How would you ensure quality control on a manufacturing line?", "star_expected": false, "keywords": ["quality", "control", "testing", "standards", "process"] },
+  { "id": 41, "category": "Engineering", "question": "Describe a time you collaborated with a multidisciplinary team on a technical project.", "star_expected": true, "keywords": ["team", "collaborate", "technical", "communication", "delivered"] },
+  { "id": 42, "category": "Engineering", "question": "What steps would you take to diagnose a recurring mechanical failure?", "star_expected": false, "keywords": ["diagnose", "failure", "root cause", "testing", "analysis"] },
+
+  { "id": 43, "category": "Media", "question": "Tell me about a campaign or piece of content you're proud of.", "star_expected": true, "keywords": ["campaign", "content", "creative", "result", "proud"] },
+  { "id": 44, "category": "Media", "question": "How would you tailor a message for two very different audiences?", "star_expected": false, "keywords": ["audience", "message", "tailor", "tone", "strategy"] },
+  { "id": 45, "category": "Media", "question": "Describe a time your creative idea was rejected. What did you do?", "star_expected": true, "keywords": ["idea", "rejected", "feedback", "adapted", "outcome"] },
+  { "id": 46, "category": "Media", "question": "How do you measure the success of a marketing campaign?", "star_expected": false, "keywords": ["metrics", "engagement", "reach", "conversion", "success"] },
+  { "id": 47, "category": "Media", "question": "Tell me about a time you had to produce content under a tight deadline.", "star_expected": true, "keywords": ["content", "deadline", "produced", "quality", "delivered"] },
+  { "id": 48, "category": "Media", "question": "How would you respond to negative feedback on social media about a brand?", "star_expected": false, "keywords": ["negative", "feedback", "brand", "response", "reputation"] }
+]

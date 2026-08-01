@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS universities (
   employer_reputation REAL,           -- 0-100 QS indicator scores
   employment_outcomes REAL,
   about TEXT,
-  status TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('approved','pending','rejected'))
+  status TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('approved','pending','rejected')),
+  spotlight_optout INTEGER NOT NULL DEFAULT 0   -- F4: suppress auto alumni-spotlight feed posts
 );
 
 CREATE TABLE IF NOT EXISTS companies (
@@ -20,7 +21,8 @@ CREATE TABLE IF NOT EXISTS companies (
   locations TEXT NOT NULL,            -- comma-separated
   about TEXT,
   banner_color TEXT DEFAULT '#0C1C3C',
-  employer_rep_participant INTEGER NOT NULL DEFAULT 1  -- QS Employer Reputation survey badge
+  employer_rep_participant INTEGER NOT NULL DEFAULT 1, -- QS Employer Reputation survey badge
+  employer_reputation REAL             -- F2: 0-100 QS Employer Reputation Survey score, null if not surveyed
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -73,7 +75,11 @@ CREATE TABLE IF NOT EXISTS experience_entries (
 CREATE TABLE IF NOT EXISTS skills (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
-  category TEXT NOT NULL                -- Technical | Data | Business | Soft
+  category TEXT NOT NULL,                -- Technical | Data | Business | Soft
+  -- F1: AI exposure — see db.js seed comment for sourcing (Anthropic Economic
+  -- Index automation/augmentation framing + Felten/Raj/Seamans AIOE).
+  ai_exposure TEXT NOT NULL DEFAULT 'human_core' CHECK (ai_exposure IN ('augmented','at_risk','human_core')),
+  exposure_score INTEGER NOT NULL DEFAULT 50   -- 0-100, higher = more exposed to automation
 );
 
 CREATE TABLE IF NOT EXISTS student_skills (
@@ -228,8 +234,43 @@ CREATE TABLE IF NOT EXISTS app_meta (
   value TEXT
 );
 
+-- F10: subject-level career pathways (static seed, ~4 subjects x 11 universities).
+CREATE TABLE IF NOT EXISTS subject_outcomes (
+  id INTEGER PRIMARY KEY,
+  university_id INTEGER NOT NULL REFERENCES universities(id),
+  subject TEXT NOT NULL,
+  subject_rank INTEGER,
+  top_sectors TEXT NOT NULL,           -- comma-separated, aligns with roles.sector
+  median_days_to_offer INTEGER
+);
+
+-- F5: AI interview coach attempts.
+CREATE TABLE IF NOT EXISTS interview_attempts (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  role_id INTEGER REFERENCES roles(id),
+  category TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  feedback_json TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- F8: career momentum activity log.
+CREATE TABLE IF NOT EXISTS activity_log (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  activity_type TEXT NOT NULL CHECK (activity_type IN
+    ('apply','connect_request','accept','post','comment','profile_edit',
+     'interview_attempt','event_registration','report_generated')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_apps_role ON applications(role_id);
 CREATE INDEX IF NOT EXISTS idx_apps_student ON applications(student_user_id);
 CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id, read);
 CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at);
 CREATE INDEX IF NOT EXISTS idx_msg_thread ON messages(thread_id);
+CREATE INDEX IF NOT EXISTS idx_subject_outcomes_uni ON subject_outcomes(university_id);
+CREATE INDEX IF NOT EXISTS idx_subject_outcomes_subject ON subject_outcomes(subject);
+CREATE INDEX IF NOT EXISTS idx_interview_attempts_user ON interview_attempts(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_activity_log_user ON activity_log(user_id, created_at);

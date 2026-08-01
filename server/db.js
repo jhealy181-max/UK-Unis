@@ -48,7 +48,7 @@ const bcrypt = require('bcryptjs');
 
 const DB_PATH = path.join(__dirname, 'qsconnect.db');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
-const SCHEMA_VERSION = '2';
+const SCHEMA_VERSION = '3';
 
 // -- schema-version migration: prototype-acceptable "delete and reseed" ------
 // If a db file exists from a previous iteration (no app_meta table, or an
@@ -141,29 +141,32 @@ function runSeed() {
     }
 
     // -- companies ------------------------------------------------------------
+    // F2: employer_reputation (0-100) seeded with a 55-95 spread; null for
+    // Kaleidoscope Media since it does not participate in the QS Employer
+    // Reputation Survey (employer_rep_participant = 0).
     const insCompany = db.prepare(`
-      INSERT INTO companies (name, sectors, locations, about, banner_color, employer_rep_participant)
-      VALUES (?,?,?,?,?,?)
+      INSERT INTO companies (name, sectors, locations, about, banner_color, employer_rep_participant, employer_reputation)
+      VALUES (?,?,?,?,?,?,?)
     `);
     const companies = [
       ['NovaTech Systems', 'Technology', 'London,Berlin,Remote',
         'NovaTech Systems builds cloud-native software platforms for global enterprises, powering commerce, logistics and fintech at scale.',
-        '#0D9488', 1],
+        '#0D9488', 1, 88],
       ['Meridian Consulting Group', 'Consulting', 'London,New York,Singapore',
         'Meridian Consulting Group advises Fortune 500 clients on strategy, operations and digital transformation across three continents.',
-        '#1E3A8A', 1],
+        '#1E3A8A', 1, 91],
       ['Ashford Capital', 'Finance', 'London,New York',
         'Ashford Capital is a global investment bank offering graduate and internship pathways into markets, banking and asset management.',
-        '#7C2D12', 1],
+        '#7C2D12', 1, 95],
       ['Brunel Engineering Co', 'Engineering', 'Manchester,Birmingham,Dubai',
         'Brunel Engineering Co delivers infrastructure and industrial engineering projects worldwide, from renewable energy to transport.',
-        '#92400E', 1],
+        '#92400E', 1, 72],
       ['Vitalis Health', 'Health', 'London,Sydney',
         'Vitalis Health is a healthcare analytics and public health consultancy improving population health outcomes globally.',
-        '#065F46', 1],
+        '#065F46', 1, 61],
       ['Kaleidoscope Media', 'Media', 'London,Los Angeles,Remote',
         'Kaleidoscope Media is a creative agency producing campaigns and content for global consumer brands.',
-        '#BE185D', 0],
+        '#BE185D', 0, null],
     ];
     for (const c of companies) {
       const r = insCompany.run(...c);
@@ -203,27 +206,52 @@ function runSeed() {
     createUser('employer', 'recruiter@kaleidoscopemedia.demo', 'Zara Ahmed', null, companyId['Kaleidoscope Media']);
 
     // -- skills (~40 across Technical/Data/Business/Soft) ----------------------
-    const insSkill = db.prepare('INSERT INTO skills (name, category) VALUES (?,?)');
+    //
+    // F1 / DATA-SOURCES.md §2 "AI impact scoring": ai_exposure and
+    // exposure_score below are a hand-calibrated prototype heuristic informed
+    // by two sources documented in DATA-SOURCES.md:
+    //   1. Anthropic Economic Index (AEI) — anthropic.com/economic-index,
+    //      dataset: huggingface.co/datasets/Anthropic/EconomicIndex. Real
+    //      Claude usage mapped to O*NET tasks/occupations, including the
+    //      automation-vs-augmentation split this schema's ai_exposure enum is
+    //      named after ('augmented' = AI mostly assists a human; 'at_risk' =
+    //      AI usage skews toward automating the task outright; 'human_core' =
+    //      low AI usage share / judgement- or relationship-dependent).
+    //   2. Felten/Raj/Seamans AI Occupational Exposure (AIOE) —
+    //      github.com/AIOE-Data/AIOE. Pre-generative-AI theoretical exposure
+    //      index used here as a structural cross-check on the AEI framing
+    //      (skills exposed in both a usage-data and a theoretical-ability
+    //      sense get higher exposure_score values).
+    // exposure_score is 0-100 (higher = more exposed to automation). This is
+    // a placeholder heuristic per DATA-SOURCES.md §3 step 7, not a literal
+    // per-row dataset join — a production build would key off O*NET-SOC/AIOE
+    // codes directly as sketched in DATA-SOURCES.md §3.
+    const insSkill = db.prepare('INSERT INTO skills (name, category, ai_exposure, exposure_score) VALUES (?,?,?,?)');
     const skills = [
       // Technical
-      ['JavaScript', 'Technical'], ['Python', 'Technical'], ['Java', 'Technical'],
-      ['React', 'Technical'], ['Node.js', 'Technical'], ['SQL', 'Technical'],
-      ['Cloud Computing (AWS)', 'Technical'], ['Git', 'Technical'], ['C++', 'Technical'],
-      ['DevOps', 'Technical'], ['Cybersecurity', 'Technical'], ['Mobile Development', 'Technical'],
+      ['JavaScript', 'Technical', 'augmented', 74], ['Python', 'Technical', 'augmented', 78],
+      ['Java', 'Technical', 'augmented', 68], ['React', 'Technical', 'augmented', 66],
+      ['Node.js', 'Technical', 'augmented', 64], ['SQL', 'Technical', 'augmented', 70],
+      ['Cloud Computing (AWS)', 'Technical', 'augmented', 60], ['Git', 'Technical', 'human_core', 30],
+      ['C++', 'Technical', 'augmented', 58], ['DevOps', 'Technical', 'augmented', 52],
+      ['Cybersecurity', 'Technical', 'human_core', 38], ['Mobile Development', 'Technical', 'augmented', 62],
       // Data
-      ['Data Analysis', 'Data'], ['Machine Learning', 'Data'], ['Excel', 'Data'],
-      ['Power BI', 'Data'], ['Statistics', 'Data'], ['Data Visualization', 'Data'],
-      ['R', 'Data'], ['Data Engineering', 'Data'],
+      ['Data Analysis', 'Data', 'augmented', 80], ['Machine Learning', 'Data', 'augmented', 72],
+      ['Excel', 'Data', 'at_risk', 68], ['Power BI', 'Data', 'augmented', 58],
+      ['Statistics', 'Data', 'augmented', 65], ['Data Visualization', 'Data', 'augmented', 62],
+      ['R', 'Data', 'augmented', 60], ['Data Engineering', 'Data', 'augmented', 68],
       // Business
-      ['Financial Modelling', 'Business'], ['Market Research', 'Business'], ['Project Management', 'Business'],
-      ['Strategy Consulting', 'Business'], ['Accounting', 'Business'], ['Marketing', 'Business'],
-      ['Sales', 'Business'], ['Business Analysis', 'Business'], ['Negotiation', 'Business'],
-      ['Supply Chain Management', 'Business'],
+      ['Financial Modelling', 'Business', 'augmented', 66], ['Market Research', 'Business', 'augmented', 64],
+      ['Project Management', 'Business', 'human_core', 42], ['Strategy Consulting', 'Business', 'human_core', 45],
+      ['Accounting', 'Business', 'at_risk', 70], ['Marketing', 'Business', 'augmented', 63],
+      ['Sales', 'Business', 'human_core', 38], ['Business Analysis', 'Business', 'augmented', 60],
+      ['Negotiation', 'Business', 'human_core', 25], ['Supply Chain Management', 'Business', 'at_risk', 55],
       // Soft
-      ['Communication', 'Soft'], ['Teamwork', 'Soft'], ['Leadership', 'Soft'],
-      ['Problem Solving', 'Soft'], ['Time Management', 'Soft'], ['Adaptability', 'Soft'],
-      ['Critical Thinking', 'Soft'], ['Presentation Skills', 'Soft'], ['Stakeholder Management', 'Soft'],
-      ['Creativity', 'Soft'],
+      ['Communication', 'Soft', 'human_core', 20], ['Teamwork', 'Soft', 'human_core', 15],
+      ['Leadership', 'Soft', 'human_core', 18], ['Problem Solving', 'Soft', 'human_core', 35],
+      ['Time Management', 'Soft', 'human_core', 22], ['Adaptability', 'Soft', 'human_core', 20],
+      ['Critical Thinking', 'Soft', 'human_core', 30], ['Presentation Skills', 'Soft', 'augmented', 45],
+      ['Stakeholder Management', 'Soft', 'human_core', 25], ['Creativity', 'Soft', 'augmented', 50],
     ];
     for (const s of skills) {
       const r = insSkill.run(...s);
@@ -460,6 +488,12 @@ function runSeed() {
       0, '2026-08-18',
       [['Marketing', 'high'], ['Market Research', 'medium'], ['Data Visualization', 'medium'], ['Creativity', 'medium']]);
 
+    // -- activity_log helper (F8) -----------------------------------------------
+    const insActivity = db.prepare('INSERT INTO activity_log (user_id, activity_type) VALUES (?,?)');
+    function logActivity(uid, type) {
+      insActivity.run(uid, type);
+    }
+
     // -- notifications helper --------------------------------------------------
     const insNotif = db.prepare(`
       INSERT INTO notifications (user_id, type, message, link, read)
@@ -501,6 +535,7 @@ function runSeed() {
       for (const st of statusChain) {
         insAppEvent.run(appId, st);
       }
+      logActivity(uid, 'apply');
 
       const company = companyOfRole(roleTitle);
       const studentName = students.find(s => s.email === studentEmail).name;
@@ -574,9 +609,11 @@ function runSeed() {
       insConnection.run(a, b, status);
       const aName = students.find(s => s.email === aEmail).name;
       const bName = students.find(s => s.email === bEmail).name;
+      logActivity(a, 'connect_request');
       if (status === 'pending') {
         notify(b, 'connection', `${aName} wants to connect with you`, '/network', 0);
       } else {
+        logActivity(b, 'accept');
         notify(a, 'connection', `${bName} accepted your connection request`, '/network', 1);
       }
     }
@@ -638,6 +675,7 @@ function runSeed() {
     }
     function studentPost(authorEmail, body) {
       const r = insPost.run(userId[authorEmail], null, null, body);
+      logActivity(userId[authorEmail], 'post');
       return r.lastInsertRowid;
     }
     function like(postId, ...emails) {
@@ -645,6 +683,9 @@ function runSeed() {
     }
     function comment(postId, authorEmail, body) {
       insComment.run(postId, userId[authorEmail], body);
+      if (students.some(s => s.email === authorEmail)) {
+        logActivity(userId[authorEmail], 'comment');
+      }
     }
 
     let p;
@@ -711,6 +752,7 @@ function runSeed() {
     function register(title, ...emails) {
       for (const e of emails) {
         insEventReg.run(eventId[title], userId[e]);
+        logActivity(userId[e], 'event_registration');
       }
     }
 
@@ -780,6 +822,73 @@ function runSeed() {
       { from: 'priya@student.demo', body: "Thank you so much, appreciate the quick turnaround!" },
     ]);
 
+    // -- subject_outcomes (F10): ~4 subjects x 11 universities, plausible ------
+    // QS-subject-rank-style values (not literal QS data — hand-calibrated for
+    // the prototype, loosely following each university's overall standing).
+    const insSubjectOutcome = db.prepare(`
+      INSERT INTO subject_outcomes (university_id, subject, subject_rank, top_sectors, median_days_to_offer)
+      VALUES (?,?,?,?,?)
+    `);
+    const subjectOutcomesSeed = [
+      { uni: 'Imperial College London', subject: 'Computer Science', rank: 8, sectors: 'Technology,Consulting', days: 18 },
+      { uni: 'Imperial College London', subject: 'Engineering', rank: 3, sectors: 'Engineering,Technology', days: 20 },
+      { uni: 'Imperial College London', subject: 'Data Science', rank: 12, sectors: 'Technology,Finance,Health', days: 19 },
+      { uni: 'Imperial College London', subject: 'Business & Management', rank: 25, sectors: 'Consulting,Finance', days: 24 },
+
+      { uni: 'UCL', subject: 'Computer Science', rank: 15, sectors: 'Technology,Consulting', days: 22 },
+      { uni: 'UCL', subject: 'Engineering', rank: 20, sectors: 'Engineering,Technology', days: 25 },
+      { uni: 'UCL', subject: 'Data Science', rank: 18, sectors: 'Technology,Finance,Health', days: 21 },
+      { uni: 'UCL', subject: 'Business & Management', rank: 22, sectors: 'Consulting,Finance,Media', days: 23 },
+
+      { uni: 'University of Edinburgh', subject: 'Computer Science', rank: 25, sectors: 'Technology,Consulting', days: 27 },
+      { uni: 'University of Edinburgh', subject: 'Engineering', rank: 35, sectors: 'Engineering,Technology', days: 30 },
+      { uni: 'University of Edinburgh', subject: 'Data Science', rank: 30, sectors: 'Technology,Finance,Health', days: 28 },
+      { uni: 'University of Edinburgh', subject: 'Business & Management', rank: 40, sectors: 'Consulting,Finance', days: 32 },
+
+      { uni: "King's College London", subject: 'Computer Science', rank: 45, sectors: 'Technology,Consulting', days: 33 },
+      { uni: "King's College London", subject: 'Engineering', rank: 55, sectors: 'Engineering,Technology', days: 36 },
+      { uni: "King's College London", subject: 'Data Science', rank: 38, sectors: 'Technology,Finance,Health', days: 30 },
+      { uni: "King's College London", subject: 'Business & Management', rank: 28, sectors: 'Consulting,Finance,Media', days: 26 },
+
+      { uni: 'University of Manchester', subject: 'Computer Science', rank: 40, sectors: 'Technology,Consulting', days: 31 },
+      { uni: 'University of Manchester', subject: 'Engineering', rank: 32, sectors: 'Engineering,Technology', days: 28 },
+      { uni: 'University of Manchester', subject: 'Data Science', rank: 42, sectors: 'Technology,Finance,Health', days: 33 },
+      { uni: 'University of Manchester', subject: 'Business & Management', rank: 35, sectors: 'Consulting,Finance,Media', days: 29 },
+
+      { uni: 'University of Birmingham', subject: 'Computer Science', rank: 90, sectors: 'Technology,Consulting', days: 40 },
+      { uni: 'University of Birmingham', subject: 'Engineering', rank: 70, sectors: 'Engineering,Technology', days: 36 },
+      { uni: 'University of Birmingham', subject: 'Data Science', rank: 85, sectors: 'Technology,Finance,Health', days: 38 },
+      { uni: 'University of Birmingham', subject: 'Business & Management', rank: 65, sectors: 'Consulting,Finance,Media', days: 34 },
+
+      { uni: 'University of Leeds', subject: 'Computer Science', rank: 95, sectors: 'Technology,Consulting', days: 41 },
+      { uni: 'University of Leeds', subject: 'Engineering', rank: 80, sectors: 'Engineering,Technology', days: 37 },
+      { uni: 'University of Leeds', subject: 'Data Science', rank: 92, sectors: 'Technology,Finance,Health', days: 39 },
+      { uni: 'University of Leeds', subject: 'Business & Management', rank: 75, sectors: 'Consulting,Finance,Media', days: 35 },
+
+      { uni: 'University of Nottingham', subject: 'Computer Science', rank: 105, sectors: 'Technology,Consulting', days: 43 },
+      { uni: 'University of Nottingham', subject: 'Engineering', rank: 88, sectors: 'Engineering,Technology', days: 39 },
+      { uni: 'University of Nottingham', subject: 'Data Science', rank: 100, sectors: 'Technology,Finance,Health', days: 41 },
+      { uni: 'University of Nottingham', subject: 'Business & Management', rank: 82, sectors: 'Consulting,Finance,Media', days: 36 },
+
+      { uni: 'University of Portsmouth', subject: 'Computer Science', rank: 380, sectors: 'Technology,Consulting', days: 30 },
+      { uni: 'University of Portsmouth', subject: 'Engineering', rank: 420, sectors: 'Engineering,Technology', days: 32 },
+      { uni: 'University of Portsmouth', subject: 'Data Science', rank: 400, sectors: 'Technology,Finance,Health', days: 31 },
+      { uni: 'University of Portsmouth', subject: 'Business & Management', rank: 350, sectors: 'Consulting,Finance,Media', days: 27 },
+
+      { uni: 'University of Salford', subject: 'Computer Science', rank: 450, sectors: 'Technology,Consulting', days: 29 },
+      { uni: 'University of Salford', subject: 'Engineering', rank: 480, sectors: 'Engineering,Technology', days: 31 },
+      { uni: 'University of Salford', subject: 'Data Science', rank: 460, sectors: 'Technology,Finance,Health', days: 28 },
+      { uni: 'University of Salford', subject: 'Business & Management', rank: 420, sectors: 'Consulting,Finance,Media', days: 25 },
+
+      { uni: 'Monash University', subject: 'Computer Science', rank: 30, sectors: 'Technology,Consulting', days: 26 },
+      { uni: 'Monash University', subject: 'Engineering', rank: 28, sectors: 'Engineering,Technology', days: 25 },
+      { uni: 'Monash University', subject: 'Data Science', rank: 33, sectors: 'Technology,Finance,Health', days: 27 },
+      { uni: 'Monash University', subject: 'Business & Management', rank: 24, sectors: 'Consulting,Finance,Media', days: 23 },
+    ];
+    for (const row of subjectOutcomesSeed) {
+      insSubjectOutcome.run(uniId[row.uni], row.subject, row.rank, row.sectors, row.days);
+    }
+
     // -- schema version marker ---------------------------------------------
     db.prepare(`
       INSERT INTO app_meta (key, value) VALUES ('schema_version', ?)
@@ -799,6 +908,7 @@ function seed() {
 
 function resetAndSeed() {
   const tables = [
+    'activity_log', 'interview_attempts', 'subject_outcomes',
     'notifications', 'messages', 'threads', 'event_registrations', 'events',
     'post_comments', 'post_likes', 'posts', 'follows', 'connections',
     'role_invites', 'application_events', 'applications', 'role_skills', 'roles',
